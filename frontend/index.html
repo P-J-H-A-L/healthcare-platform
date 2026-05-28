@@ -133,6 +133,39 @@
     /* FAB 버튼 */
     .fab{position:fixed;bottom:2rem;right:2rem;z-index:500;width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,#1565c0,#0d47a1);color:#fff;border:none;font-size:1.5rem;box-shadow:0 4px 16px rgba(21,101,192,.45);transition:transform .2s;}
     .fab:hover{transform:scale(1.1);}
+
+    /* ── 자가진단 ── */
+    .diag-mode-tabs{display:flex;gap:.5rem;margin-bottom:1.2rem;}
+    .diag-mode-btn{flex:1;padding:.55rem;border-radius:10px;border:1.5px solid #d1d9e6;background:#fff;font-weight:600;font-size:.88rem;color:#555;transition:all .15s;cursor:pointer;}
+    .diag-mode-btn.active{background:#1565c0;color:#fff;border-color:#1565c0;}
+    .wizard-progress{display:flex;align-items:center;gap:.3rem;margin-bottom:1.5rem;}
+    .wiz-dot{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.78rem;font-weight:700;border:2px solid #d1d9e6;background:#fff;color:#999;transition:all .2s;flex-shrink:0;}
+    .wiz-dot.done{background:#1565c0;border-color:#1565c0;color:#fff;}
+    .wiz-dot.current{background:#fff;border-color:#1565c0;color:#1565c0;}
+    .wiz-line{flex:1;height:2px;background:#d1d9e6;transition:background .2s;}
+    .wiz-line.done{background:#1565c0;}
+    .opt-card{border:1.5px solid #e2e8f0;border-radius:12px;padding:.75rem 1rem;cursor:pointer;transition:all .15s;display:flex;align-items:center;gap:.75rem;background:#fff;}
+    .opt-card:hover{border-color:#90caf9;background:#f0f7ff;}
+    .opt-card.selected{border-color:#1565c0;background:#e8f0fe;}
+    .opt-card.warn-selected{border-color:#e53935;background:#fff5f5;}
+    .opt-icon{font-size:1.3rem;color:#888;width:28px;text-align:center;flex-shrink:0;}
+    .opt-label{font-weight:500;font-size:.9rem;}
+    .opt-desc{font-size:.78rem;color:#888;margin-top:.1rem;}
+    .risk-banner{border-radius:16px;padding:1.5rem;text-align:center;margin-bottom:1.2rem;}
+    .risk-banner.risk-normal{background:linear-gradient(135deg,#e8f5e9,#c8e6c9);}
+    .risk-banner.risk-mild{background:linear-gradient(135deg,#fffde7,#fff9c4);}
+    .risk-banner.risk-moderate{background:linear-gradient(135deg,#fff3e0,#ffe0b2);}
+    .risk-banner.risk-emergency{background:linear-gradient(135deg,#ffebee,#ffcdd2);}
+    .risk-icon{font-size:3rem;line-height:1;margin-bottom:.5rem;}
+    .risk-label{font-size:1.3rem;font-weight:700;}
+    .risk-score{font-size:.82rem;opacity:.7;margin-top:.2rem;}
+    .recommend-card{background:#fff;border-radius:12px;padding:1rem;border-left:4px solid #1565c0;margin-bottom:.6rem;font-size:.88rem;}
+    .diag-history-card{background:#fff;border-radius:14px;box-shadow:0 2px 10px rgba(0,0,0,.06);padding:1.1rem;margin-bottom:.8rem;}
+    .risk-chip{display:inline-block;border-radius:999px;padding:.2rem .7rem;font-size:.78rem;font-weight:700;}
+    .risk-chip.normal{background:#e8f5e9;color:#2e7d32;}
+    .risk-chip.mild{background:#fffde7;color:#f57f17;}
+    .risk-chip.moderate{background:#fff3e0;color:#e65100;}
+    .risk-chip.emergency{background:#ffebee;color:#c62828;}
   </style>
 </head>
 <body>
@@ -293,11 +326,11 @@
           <p class="text-muted small mb-0">예방접종 이력과 접종 날짜·병원을 확인합니다.</p>
         </div>
       </div>
-      <div class="col-sm-6 col-md-4">
-        <div class="card feature-card h-100 p-3" style="opacity:.6;">
+      <div class="col-sm-6 col-md-4" onclick="openSelfDiagPage()">
+        <div class="card feature-card h-100 p-3">
           <div class="feature-icon-box" style="background:#fff3e0;color:#e65100;"><i class="bi bi-clipboard2-pulse"></i></div>
-          <h6 class="fw-bold">자가진단 <span class="badge bg-secondary" style="font-size:.65rem;">준비중</span></h6>
-          <p class="text-muted small mb-0">건강 설문과 증상을 직접 기록합니다.</p>
+          <h6 class="fw-bold">자가진단</h6>
+          <p class="text-muted small mb-0">증상을 입력하면 위험도를 분류하고 이력을 관리합니다.</p>
         </div>
       </div>
       <div class="col-sm-6 col-md-4">
@@ -559,6 +592,45 @@
 </div>
 
 
+<!-- ============================================================
+  PAGE 8: 자가진단 (FFJ-03)
+  ============================================================ -->
+<div id="selfDiagPage" class="page inner-page">
+  <div class="topbar">
+    <button class="btn btn-sm btn-light text-primary fw-bold me-1" onclick="goBack('mainPage')"><i class="bi bi-arrow-left"></i></button>
+    <i class="bi bi-clipboard2-pulse fs-5"></i>
+    <span class="fw-bold fs-5 me-auto">자가진단</span>
+    <div class="user-chip"><i class="bi bi-person-circle"></i><span id="sdTopEmail"></span></div>
+  </div>
+  <div class="inner-scroll container py-4" style="max-width:700px;">
+
+    <!-- 모드 탭 -->
+    <div class="diag-mode-tabs">
+      <button id="btnWizardMode" class="diag-mode-btn active" onclick="showDiagMode('wizard')">
+        <i class="bi bi-pencil-square me-1"></i>진단하기
+      </button>
+      <button id="btnHistoryMode" class="diag-mode-btn" onclick="showDiagMode('history')">
+        <i class="bi bi-clock-history me-1"></i>진단 이력
+      </button>
+    </div>
+
+    <!-- ── 위저드 패널 ── -->
+    <div id="diagWizardPanel">
+      <!-- 진행 표시 -->
+      <div class="wizard-progress" id="wizardProgress"></div>
+      <!-- 각 스텝 / 결과를 JS로 렌더 -->
+      <div id="wizardContent"></div>
+    </div>
+
+    <!-- ── 이력 패널 ── -->
+    <div id="diagHistoryPanel" style="display:none;">
+      <div id="diagHistoryList"></div>
+    </div>
+
+  </div>
+</div>
+
+
 <!-- 성공 모달 (회원가입 완료) -->
 <div id="successModal" class="modal-overlay" onclick="closeSuccessModal(event)">
   <div class="modal-box text-center">
@@ -586,6 +658,61 @@ const SESSION_KEY = 'health_session'
 const EMAIL_RE    = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 const HEALTH_KEY  = (e) => `health_info_${e}`
 const MR_KEY      = (e) => `medical_records_${e}`
+const SD_KEY      = (e) => `self_diagnosis_${e}`
+
+/* 자가진단 설문 데이터 */
+const SD_SYMPTOMS = [
+  {id:'fever',    label:'발열 / 오한',        icon:'bi-thermometer-high', score:4},
+  {id:'headache', label:'두통 / 어지럼증',     icon:'bi-emoji-dizzy',      score:5},
+  {id:'chest',    label:'흉통 / 가슴 답답함',  icon:'bi-heart-pulse',      score:9},
+  {id:'abdomen',  label:'복통 / 소화 불량',    icon:'bi-activity',         score:3},
+  {id:'breathing',label:'호흡 곤란 / 기침',    icon:'bi-lungs',            score:8},
+  {id:'muscle',   label:'근육통 / 관절통',     icon:'bi-person-walking',   score:2},
+  {id:'skin',     label:'피부 이상 (발진 등)', icon:'bi-droplet-half',     score:3},
+  {id:'nausea',   label:'구역 / 구토 / 설사',  icon:'bi-emoji-frown',      score:3},
+  {id:'fatigue',  label:'피로 / 무기력',       icon:'bi-battery-half',     score:1},
+  {id:'other',    label:'기타 증상',           icon:'bi-three-dots',       score:2},
+]
+const SD_SEVERITY = [
+  {id:'s1', label:'약함',         desc:'일상생활에 거의 지장 없음',    mult:1.0},
+  {id:'s2', label:'보통',         desc:'일부 활동 제한, 주의 필요',    mult:1.8},
+  {id:'s3', label:'강함',         desc:'일상생활이 힘든 수준',         mult:2.8},
+  {id:'s4', label:'매우 강함',    desc:'참기 어려운 극심한 불편함',    mult:4.0},
+]
+const SD_DURATION = [
+  {id:'d1', label:'오늘 처음',    desc:'1일 미만',    mult:1.0},
+  {id:'d2', label:'1~3일',        desc:'',            mult:1.4},
+  {id:'d3', label:'4~7일',        desc:'',            mult:1.8},
+  {id:'d4', label:'1주일 이상',   desc:'',            mult:2.4},
+]
+const SD_WARNINGS = [
+  {id:'w1', label:'흉통이 왼쪽 팔·어깨·턱으로 퍼짐',    score:35, icon:'bi-heart-pulse-fill'},
+  {id:'w2', label:'갑자기 시작된 매우 극심한 두통',       score:28, icon:'bi-lightning-fill'},
+  {id:'w3', label:'의식이 흐릿하거나 혼란스러움',         score:40, icon:'bi-exclamation-triangle-fill'},
+  {id:'w4', label:'말이 어눌하거나 한쪽 팔·얼굴 마비',   score:40, icon:'bi-person-fill-exclamation'},
+  {id:'w5', label:'체온 39.5°C 이상',                    score:22, icon:'bi-thermometer-sun'},
+  {id:'w6', label:'앉아도 숨이 차는 심한 호흡 곤란',     score:35, icon:'bi-lungs-fill'},
+  {id:'w7', label:'혈변 / 토혈 발생',                    score:28, icon:'bi-droplet-fill'},
+  {id:'w8', label:'해당 없음',                            score:0,  icon:'bi-check-circle'},
+]
+const SD_RISK = [
+  {key:'normal',    label:'정상',   icon:'🟢', cls:'risk-normal',    color:'#2e7d32',
+   desc:'특별한 의학적 조치가 필요하지 않습니다.',
+   recs:['충분한 휴식과 수면을 취하세요.','수분을 충분히 섭취하세요.','증상이 지속되거나 악화되면 재진단하세요.']},
+  {key:'mild',      label:'경증',   icon:'🟡', cls:'risk-mild',      color:'#f57f17',
+   desc:'가벼운 증상으로, 경과 관찰이 필요합니다.',
+   recs:['1~2일간 증상 변화를 주의 깊게 관찰하세요.','충분한 휴식을 취하고 무리한 활동을 피하세요.','증상이 악화되거나 새로운 증상이 나타나면 의원을 방문하세요.']},
+  {key:'moderate',  label:'중등도', icon:'🟠', cls:'risk-moderate',  color:'#e65100',
+   desc:'증상이 일정 수준 이상으로, 의료 상담을 권고합니다.',
+   recs:['2~3일 내 가까운 의원이나 병원을 방문하세요.','무리한 신체 활동을 중단하세요.','수분을 충분히 섭취하고 체온을 측정하세요.','증상이 급격히 나빠지면 즉시 응급실을 방문하세요.']},
+  {key:'emergency', label:'응급',   icon:'🔴', cls:'risk-emergency',  color:'#c62828',
+   desc:'즉각적인 의료 처치가 필요한 응급 상황입니다.',
+   recs:['즉시 119에 신고하거나 응급실로 이동하세요.','절대 혼자 운전하지 마세요.','주변 사람에게 도움을 요청하세요.']},
+]
+
+/* 자가진단 진행 상태 */
+let diagStep    = 0          // 0~3: 스텝, 4: 결과
+let diagAnswers = { symptoms:[], severity:'', duration:'', warnings:[] }
 
 const DISEASE_LIST = [
   '당뇨(제1형)','당뇨(제2형)','고혈압','고지혈증','심장질환',
@@ -1222,6 +1349,306 @@ function deleteRecord(id){
   saveMedicalRecords(records)
   renderMedicalRecordList()
   showToast('진료 기록이 삭제되었습니다.')
+}
+
+/* ================================================================
+   ㉑ 자가진단 (FFJ-03)
+   ================================================================ */
+const getSelfDiagnoses = () => { const s=getSession(); return s?JSON.parse(localStorage.getItem(SD_KEY(s.email))||'[]'):[] }
+const saveSelfDiagnoses = arr => { const s=getSession(); if(s) localStorage.setItem(SD_KEY(s.email),JSON.stringify(arr)) }
+
+function openSelfDiagPage(){
+  const s=getSession(); if(!s) return
+  document.getElementById('sdTopEmail').textContent=s.email
+  resetDiag()
+  showDiagMode('wizard')
+  showPage('selfDiagPage')
+}
+
+function showDiagMode(mode){
+  document.getElementById('btnWizardMode').classList.toggle('active', mode==='wizard')
+  document.getElementById('btnHistoryMode').classList.toggle('active', mode==='history')
+  document.getElementById('diagWizardPanel').style.display = mode==='wizard'?'block':'none'
+  document.getElementById('diagHistoryPanel').style.display= mode==='history'?'block':'none'
+  if(mode==='history') renderDiagHistory()
+}
+
+/* ── 위저드 리셋 & 렌더 ── */
+function resetDiag(){
+  diagStep=0
+  diagAnswers={symptoms:[],severity:'',duration:'',warnings:[]}
+  renderWizard()
+}
+
+function renderWizard(){
+  renderProgress()
+  const con=document.getElementById('wizardContent')
+  if(diagStep===0) con.innerHTML=renderStepSymptoms()
+  else if(diagStep===1) con.innerHTML=renderStepSeverity()
+  else if(diagStep===2) con.innerHTML=renderStepDuration()
+  else if(diagStep===3) con.innerHTML=renderStepWarnings()
+  else con.innerHTML=renderResult()
+}
+
+/* ── 진행 표시 ── */
+function renderProgress(){
+  const labels=['증상','강도','기간','위험징후','결과']
+  const prog=document.getElementById('wizardProgress')
+  if(diagStep===4){prog.innerHTML='';return}
+  prog.innerHTML=labels.slice(0,4).map((l,i)=>{
+    const cls=i<diagStep?'done':i===diagStep?'current':''
+    const lineCls=i<diagStep?'done':''
+    return `<div class="wiz-dot ${cls}">${i<diagStep?'✓':(i+1)}</div>
+            ${i<3?`<div class="wiz-line ${lineCls}"></div>`:''}`
+  }).join('')+'<div class="wiz-dot '+(diagStep>=4?'done':diagStep===4?'current':'')+'">결과</div>'
+}
+
+/* ── Step 0: 증상 선택 (복수) ── */
+function renderStepSymptoms(){
+  const sel=diagAnswers.symptoms
+  return `<div class="section-card">
+    <h6 class="fw-bold mb-1">어떤 증상이 있으신가요?</h6>
+    <p class="text-muted small mb-3">해당하는 증상을 모두 선택하세요. (복수 선택 가능)</p>
+    <div class="d-flex flex-column gap-2" id="symptomList">
+      ${SD_SYMPTOMS.map(s=>`
+        <div class="opt-card ${sel.includes(s.id)?'selected':''}" onclick="toggleSymptom('${s.id}')">
+          <i class="opt-icon bi ${s.icon}"></i>
+          <span class="opt-label">${s.label}</span>
+        </div>`).join('')}
+    </div>
+    <button class="btn btn-primary-main w-100 mt-3" onclick="goStep(1)"
+            ${sel.length===0?'disabled':''} id="btnNextStep0">
+      다음 <i class="bi bi-arrow-right ms-1"></i>
+    </button>
+  </div>`
+}
+function toggleSymptom(id){
+  const i=diagAnswers.symptoms.indexOf(id)
+  if(i>=0) diagAnswers.symptoms.splice(i,1)
+  else diagAnswers.symptoms.push(id)
+  renderWizard()
+}
+
+/* ── Step 1: 강도 선택 (단일) ── */
+function renderStepSeverity(){
+  const sel=diagAnswers.severity
+  return `<div class="section-card">
+    <h6 class="fw-bold mb-1">증상의 강도는 어떤가요?</h6>
+    <p class="text-muted small mb-3">전반적인 불편함의 수준을 선택하세요.</p>
+    <div class="d-flex flex-column gap-2">
+      ${SD_SEVERITY.map(s=>`
+        <div class="opt-card ${sel===s.id?'selected':''}" onclick="selectSeverity('${s.id}')">
+          <i class="opt-icon bi bi-signal"></i>
+          <div><div class="opt-label">${s.label}</div><div class="opt-desc">${s.desc}</div></div>
+        </div>`).join('')}
+    </div>
+    <div class="d-flex gap-2 mt-3">
+      <button class="btn btn-outline-secondary rounded-3 px-4" onclick="goStep(0)"><i class="bi bi-arrow-left me-1"></i>이전</button>
+      <button class="btn btn-primary-main flex-fill" onclick="goStep(2)" ${!sel?'disabled':''}>다음 <i class="bi bi-arrow-right ms-1"></i></button>
+    </div>
+  </div>`
+}
+function selectSeverity(id){ diagAnswers.severity=id; renderWizard() }
+
+/* ── Step 2: 기간 선택 (단일) ── */
+function renderStepDuration(){
+  const sel=diagAnswers.duration
+  return `<div class="section-card">
+    <h6 class="fw-bold mb-1">증상이 얼마나 지속됐나요?</h6>
+    <p class="text-muted small mb-3">증상이 시작된 시점을 기준으로 선택하세요.</p>
+    <div class="d-flex flex-column gap-2">
+      ${SD_DURATION.map(d=>`
+        <div class="opt-card ${sel===d.id?'selected':''}" onclick="selectDuration('${d.id}')">
+          <i class="opt-icon bi bi-calendar-week"></i>
+          <div><div class="opt-label">${d.label}</div>${d.desc?`<div class="opt-desc">${d.desc}</div>`:''}</div>
+        </div>`).join('')}
+    </div>
+    <div class="d-flex gap-2 mt-3">
+      <button class="btn btn-outline-secondary rounded-3 px-4" onclick="goStep(1)"><i class="bi bi-arrow-left me-1"></i>이전</button>
+      <button class="btn btn-primary-main flex-fill" onclick="goStep(3)" ${!sel?'disabled':''}>다음 <i class="bi bi-arrow-right ms-1"></i></button>
+    </div>
+  </div>`
+}
+function selectDuration(id){ diagAnswers.duration=id; renderWizard() }
+
+/* ── Step 3: 위험 징후 (복수, '해당없음' 단독) ── */
+function renderStepWarnings(){
+  const sel=diagAnswers.warnings
+  return `<div class="section-card">
+    <h6 class="fw-bold mb-1">다음 중 해당하는 것이 있나요?</h6>
+    <p class="text-muted small mb-3">중증 응급 징후를 확인합니다. 없으면 <strong>해당 없음</strong>을 선택하세요.</p>
+    <div class="d-flex flex-column gap-2">
+      ${SD_WARNINGS.map(w=>`
+        <div class="opt-card ${sel.includes(w.id)?(w.id==='w8'?'selected':'warn-selected'):''}"
+             onclick="toggleWarning('${w.id}')">
+          <i class="opt-icon bi ${w.icon}" style="color:${w.id==='w8'?'#2e7d32':'#c62828'}"></i>
+          <span class="opt-label">${w.label}</span>
+        </div>`).join('')}
+    </div>
+    <div class="d-flex gap-2 mt-3">
+      <button class="btn btn-outline-secondary rounded-3 px-4" onclick="goStep(2)"><i class="bi bi-arrow-left me-1"></i>이전</button>
+      <button class="btn btn-primary-main flex-fill" onclick="goStep(4)" ${sel.length===0?'disabled':''}>결과 보기 <i class="bi bi-bar-chart-line ms-1"></i></button>
+    </div>
+  </div>`
+}
+function toggleWarning(id){
+  if(id==='w8'){
+    diagAnswers.warnings=diagAnswers.warnings.includes('w8')?[]:['w8']
+  } else {
+    diagAnswers.warnings=diagAnswers.warnings.filter(w=>w!=='w8')
+    const i=diagAnswers.warnings.indexOf(id)
+    if(i>=0) diagAnswers.warnings.splice(i,1)
+    else diagAnswers.warnings.push(id)
+  }
+  renderWizard()
+}
+
+/* ── 위험도 계산 ── */
+function calcRiskScore(){
+  const symScore=diagAnswers.symptoms.reduce((sum,id)=>{
+    const s=SD_SYMPTOMS.find(s=>s.id===id); return sum+(s?s.score:0)
+  },0)
+  const sevMult=(SD_SEVERITY.find(s=>s.id===diagAnswers.severity)||{mult:1}).mult
+  const durMult=(SD_DURATION.find(d=>d.id===diagAnswers.duration)||{mult:1}).mult
+  const warnScore=diagAnswers.warnings.filter(w=>w!=='w8').reduce((sum,id)=>{
+    const w=SD_WARNINGS.find(w=>w.id===id); return sum+(w?w.score:0)
+  },0)
+  return Math.round(symScore*sevMult*durMult + warnScore)
+}
+
+function getRiskLevel(score){
+  if(score>=36) return SD_RISK[3]
+  if(score>=21) return SD_RISK[2]
+  if(score>=10) return SD_RISK[1]
+  return SD_RISK[0]
+}
+
+/* ── 결과 렌더 + 저장 ── */
+function renderResult(){
+  const score=calcRiskScore()
+  const risk=getRiskLevel(score)
+
+  // 응급 징후가 있으면 강제 응급
+  const emergencyWarnings=['w1','w2','w3','w4','w6']
+  const hasEmergency=diagAnswers.warnings.some(w=>emergencyWarnings.includes(w))
+  const finalRisk=hasEmergency?SD_RISK[3]:risk
+
+  // 선택한 증상 레이블
+  const symLabels=diagAnswers.symptoms.map(id=>SD_SYMPTOMS.find(s=>s.id===id)?.label||id)
+  const sevLabel=(SD_SEVERITY.find(s=>s.id===diagAnswers.severity)||{}).label||''
+  const durLabel=(SD_DURATION.find(d=>d.id===diagAnswers.duration)||{}).label||''
+  const warnLabels=diagAnswers.warnings.filter(w=>w!=='w8').map(id=>SD_WARNINGS.find(w=>w.id===id)?.label||id)
+
+  // 추가 응급 권고
+  const extraRecs=[]
+  if(diagAnswers.warnings.includes('w1')) extraRecs.push('⚠️ 심근경색 의심 — 즉시 119에 신고하세요!')
+  if(diagAnswers.warnings.includes('w2')||diagAnswers.warnings.includes('w4')) extraRecs.push('⚠️ 뇌졸중 의심 — 즉시 119에 신고하고 절대 혼자 이동하지 마세요!')
+  if(diagAnswers.warnings.includes('w3')) extraRecs.push('⚠️ 의식 저하 — 즉시 119에 신고하세요!')
+  if(diagAnswers.warnings.includes('w5')) extraRecs.push('⚠️ 고열 — 해열제를 복용하고 즉시 응급실을 방문하세요!')
+
+  const allRecs=[...extraRecs, ...finalRisk.recs]
+
+  return `<div class="section-card">
+    <div class="risk-banner ${finalRisk.cls}">
+      <div class="risk-icon">${finalRisk.icon}</div>
+      <div class="risk-label" style="color:${finalRisk.color}">${finalRisk.label}</div>
+      <div class="risk-score">위험 점수: ${score}점 · ${new Date().toLocaleDateString('ko-KR')}</div>
+      <div class="mt-2 small">${finalRisk.desc}</div>
+    </div>
+
+    <h6 class="fw-bold mb-2 small text-muted">입력 내용 요약</h6>
+    <div class="bg-light rounded-3 p-3 mb-3 small">
+      <div class="mb-1"><strong>증상:</strong> ${symLabels.join(', ')||'없음'}</div>
+      <div class="mb-1"><strong>강도:</strong> ${sevLabel}</div>
+      <div class="mb-1"><strong>기간:</strong> ${durLabel}</div>
+      ${warnLabels.length?`<div><strong>위험 징후:</strong> <span class="text-danger">${warnLabels.join(', ')}</span></div>`:''}
+    </div>
+
+    <h6 class="fw-bold mb-2 small text-muted">권고 사항</h6>
+    ${allRecs.map(r=>`
+      <div class="recommend-card" style="border-left-color:${finalRisk.color}">
+        <i class="bi bi-check2-circle me-1" style="color:${finalRisk.color}"></i>${r}
+      </div>`).join('')}
+
+    <div class="d-flex gap-2 mt-3">
+      <button class="btn btn-outline-primary rounded-3 flex-fill" onclick="showDiagMode('history')">
+        <i class="bi bi-clock-history me-1"></i>이력 보기
+      </button>
+      <button class="btn btn-primary-main flex-fill" onclick="resetDiag()">
+        <i class="bi bi-arrow-repeat me-1"></i>다시 진단
+      </button>
+    </div>
+  </div>`
+}
+
+/* ── 스텝 이동 ── */
+function goStep(step){
+  // 결과 단계 진입 시 저장을 여기서 한 번만 수행 (렌더 함수에서 분리)
+  if(step===4) saveDiagResult()
+  diagStep=step
+  renderWizard()
+  document.getElementById('diagWizardPanel')?.scrollIntoView({behavior:'smooth',block:'start'})
+}
+
+/* ── 결과 저장 (goStep(4) 에서 단 1회 호출) ── */
+function saveDiagResult(){
+  const score=calcRiskScore()
+  const emergencyWarnings=['w1','w2','w3','w4','w6']
+  const hasEmergency=diagAnswers.warnings.some(w=>emergencyWarnings.includes(w))
+  const risk=hasEmergency?SD_RISK[3]:getRiskLevel(score)
+  const symLabels=diagAnswers.symptoms.map(id=>SD_SYMPTOMS.find(s=>s.id===id)?.label||id)
+  const sevLabel=(SD_SEVERITY.find(s=>s.id===diagAnswers.severity)||{}).label||''
+  const durLabel=(SD_DURATION.find(d=>d.id===diagAnswers.duration)||{}).label||''
+  const warnLabels=diagAnswers.warnings.filter(w=>w!=='w8').map(id=>SD_WARNINGS.find(w=>w.id===id)?.label||id)
+  const extraRecs=[]
+  if(diagAnswers.warnings.includes('w1')) extraRecs.push('⚠️ 심근경색 의심 — 즉시 119에 신고하세요!')
+  if(diagAnswers.warnings.includes('w2')||diagAnswers.warnings.includes('w4')) extraRecs.push('⚠️ 뇌졸중 의심 — 즉시 119에 신고하고 절대 혼자 이동하지 마세요!')
+  if(diagAnswers.warnings.includes('w3')) extraRecs.push('⚠️ 의식 저하 — 즉시 119에 신고하세요!')
+  if(diagAnswers.warnings.includes('w5')) extraRecs.push('⚠️ 고열 — 해열제를 복용하고 즉시 응급실을 방문하세요!')
+  const entry={
+    id:uid(), date:today(), score,
+    riskKey:risk.key, riskLabel:risk.label,
+    symptoms:[...diagAnswers.symptoms], symLabels,
+    severity:diagAnswers.severity, sevLabel,
+    duration:diagAnswers.duration, durLabel,
+    warnings:[...diagAnswers.warnings], warnLabels,
+    extraRecs
+  }
+  const list=getSelfDiagnoses(); list.unshift(entry); saveSelfDiagnoses(list)
+}
+
+/* ── 이력 렌더 ── */
+function renderDiagHistory(){
+  const list=getSelfDiagnoses()
+  const wrap=document.getElementById('diagHistoryList')
+  if(!list.length){
+    wrap.innerHTML=`<div class="empty-state">
+      <i class="bi bi-clipboard2-pulse"></i>
+      <p class="fw-500 mb-1">진단 이력이 없습니다.</p>
+      <p class="text-muted small">진단하기 탭에서 자가진단을 시작하세요.</p>
+    </div>`; return
+  }
+  wrap.innerHTML=list.map(entry=>{
+    const risk=SD_RISK.find(r=>r.key===esc(entry.riskKey))||SD_RISK[0]
+    const safeSyms=(entry.symLabels||[]).map(esc).join(', ')||'미입력'
+    const safeSev=esc(entry.sevLabel||'')
+    const safeDur=esc(entry.durLabel||'')
+    const safeWarns=(entry.warnLabels||[]).map(esc).join(', ')
+    const safeScore=parseInt(entry.score)||0
+    const safeDate=esc(fmt(entry.date||''))
+    return `<div class="diag-history-card">
+      <div class="d-flex justify-content-between align-items-center mb-2">
+        <div>
+          <span class="risk-chip ${risk.key}">${risk.icon} ${risk.label}</span>
+          <span class="text-muted small ms-2">점수 ${safeScore}점</span>
+        </div>
+        <span class="text-muted small">${safeDate}</span>
+      </div>
+      <div class="small text-muted"><strong>증상:</strong> ${safeSyms}</div>
+      ${safeSev?`<div class="small text-muted"><strong>강도:</strong> ${safeSev} · <strong>기간:</strong> ${safeDur}</div>`:''}
+      ${safeWarns?`<div class="small text-danger mt-1"><i class="bi bi-exclamation-triangle me-1"></i>${safeWarns}</div>`:''}
+    </div>`
+  }).join('')
 }
 
 /* ================================================================
