@@ -1,0 +1,1236 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>헬스케어 플랫폼</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet" />
+  <style>
+    *{font-family:'Noto Sans KR',sans-serif;}
+    body{background:#eef2f7;min-height:100vh;}
+
+    /* 페이지 전환 */
+    .page{display:none;min-height:100vh;}
+    .page.active{display:flex;}
+
+    /* 인증 카드 */
+    .auth-card{background:#fff;border-radius:18px;box-shadow:0 8px 32px rgba(21,101,192,.10);padding:2.5rem;width:100%;max-width:460px;}
+    .icon-circle{width:72px;height:72px;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 1rem;}
+
+    /* 입력 필드 */
+    .form-control,.form-select{border-radius:10px;padding:.65rem 1rem;border:1.5px solid #d1d9e6;transition:border-color .2s,box-shadow .2s;}
+    .form-control:focus{border-color:#1565c0;box-shadow:0 0 0 3px rgba(21,101,192,.12);}
+    .input-group-text{background:#f8f9fa;border-radius:10px 0 0 10px!important;border:1.5px solid #d1d9e6;border-right:none;color:#6c757d;}
+    .input-group .form-control{border-radius:0 10px 10px 0!important;border-left:none;}
+    .input-group .btn-eye{background:#f8f9fa;border:1.5px solid #d1d9e6;border-left:none;border-radius:0 10px 10px 0!important;color:#6c757d;}
+    .invalid-feedback{font-size:.82rem;color:#dc3545;}
+
+    /* 버튼 */
+    .btn-primary-main{background:linear-gradient(135deg,#1565c0,#0d47a1);border:none;border-radius:10px;color:#fff;font-weight:700;font-size:1rem;padding:.75rem 1.5rem;transition:opacity .2s;}
+    .btn-primary-main:hover{opacity:.9;color:#fff;}
+    .btn-primary-main:disabled{opacity:.6;}
+    .btn-outline-main{border:1.5px solid #1565c0;border-radius:10px;color:#1565c0;font-weight:600;padding:.65rem 1.5rem;transition:background .15s;}
+    .btn-outline-main:hover{background:#e3f0ff;color:#1565c0;}
+
+    /* 비밀번호 강도 */
+    .strength-bar{height:6px;border-radius:4px;transition:width .3s,background .3s;}
+
+    /* 성공 모달 */
+    .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;align-items:center;justify-content:center;}
+    .modal-overlay.show{display:flex;}
+    .modal-box{background:#fff;border-radius:20px;padding:2rem;max-width:380px;width:90%;animation:pop .25s ease;}
+    @keyframes pop{from{transform:scale(.85);opacity:0;}to{transform:scale(1);opacity:1;}}
+
+    /* 오류 알림 */
+    .alert-error{background:#fff5f5;border:1.5px solid #f5c6cb;border-radius:10px;color:#842029;padding:.75rem 1rem;font-size:.9rem;display:flex;align-items:center;gap:.5rem;}
+
+    /* 메인 페이지 */
+    .hero-card{background:linear-gradient(135deg,#1565c0,#00897b);border-radius:18px;color:#fff;padding:2rem;}
+    .avatar-circle{width:56px;height:56px;border-radius:50%;background:rgba(255,255,255,.25);display:flex;align-items:center;justify-content:center;font-size:1.4rem;font-weight:700;color:#fff;}
+    .feature-card{border-radius:16px;border:none;box-shadow:0 2px 12px rgba(0,0,0,.07);transition:transform .2s,box-shadow .2s;cursor:pointer;}
+    .feature-card:hover{transform:translateY(-4px);box-shadow:0 8px 24px rgba(0,0,0,.13);}
+    .feature-icon-box{width:56px;height:56px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:1.6rem;margin-bottom:1rem;}
+    .char-counter{font-size:.78rem;color:#888;text-align:right;margin-top:2px;}
+
+    /* 탑바 */
+    .topbar{background:linear-gradient(90deg,#1565c0,#1976d2);color:#fff;padding:.85rem 1.5rem;display:flex;align-items:center;gap:1rem;flex-shrink:0;}
+    .user-chip{background:rgba(255,255,255,.18);border-radius:999px;padding:.25rem .85rem;font-size:.88rem;color:#fff;display:flex;align-items:center;gap:.4rem;}
+    .divider-text{display:flex;align-items:center;gap:.75rem;color:#aaa;margin:1rem 0;}
+    .divider-text::before,.divider-text::after{content:'';flex:1;border-top:1px solid #ddd;}
+
+    /* 공통 내부 페이지 */
+    .inner-page{flex-direction:column;}
+    .inner-scroll{flex:1;overflow-y:auto;}
+    .section-card{background:#fff;border-radius:16px;box-shadow:0 2px 10px rgba(0,0,0,.06);padding:1.5rem;margin-bottom:1rem;}
+    .section-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:1.2rem;padding-bottom:.8rem;border-bottom:1.5px solid #f0f4f8;}
+    .btn-save{background:linear-gradient(135deg,#1565c0,#0d47a1);color:#fff;border:none;border-radius:10px;padding:.5rem 1.2rem;font-weight:700;font-size:.88rem;}
+    .btn-save:hover{opacity:.88;color:#fff;}
+
+    /* 건강 정보 탭 */
+    .health-nav-tabs{border-bottom:2px solid #e2e8f0;gap:2px;flex-wrap:nowrap;overflow-x:auto;}
+    .health-nav-tabs::-webkit-scrollbar{height:3px;}
+    .health-nav-tabs .nav-link{color:#555;font-weight:500;border-radius:10px 10px 0 0;padding:.6rem 1rem;font-size:.88rem;border:none;white-space:nowrap;transition:background .15s;}
+    .health-nav-tabs .nav-link:hover{background:#e8f0fe;color:#1565c0;}
+    .health-nav-tabs .nav-link.active{background:#fff;color:#1565c0;font-weight:700;border-bottom:3px solid #1565c0;margin-bottom:-2px;}
+    .health-tab-content{background:#fff;border-radius:0 16px 16px 16px;padding:1.8rem;box-shadow:0 2px 10px rgba(0,0,0,.06);}
+
+    /* 동적 목록 아이템 */
+    .list-item-card{background:#f8fafc;border:1.5px solid #e2e8f0;border-radius:12px;padding:1rem;position:relative;transition:border-color .2s;}
+    .list-item-card:hover{border-color:#90caf9;}
+    .btn-item-delete{position:absolute;top:.6rem;right:.6rem;background:#fee2e2;color:#dc2626;border:none;border-radius:8px;width:28px;height:28px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:.85rem;}
+    .btn-item-delete:hover{background:#fca5a5;}
+    .btn-add-item{border:2px dashed #90caf9;border-radius:12px;background:transparent;color:#1565c0;font-weight:600;width:100%;padding:.75rem;transition:background .15s;}
+    .btn-add-item:hover{background:#e3f2fd;}
+
+    /* 알러지 태그 */
+    .allergy-tag{display:inline-flex;align-items:center;gap:.3rem;background:#e8f0fe;color:#1565c0;border-radius:999px;padding:.2rem .75rem;font-size:.82rem;font-weight:600;margin:.2rem;}
+    .allergy-tag button{background:none;border:none;color:#1565c0;cursor:pointer;padding:0;line-height:1;}
+    .allergy-tag.food-tag{background:#fef3c7;color:#b45309;}
+    .allergy-tag.food-tag button{color:#b45309;}
+    .tag-input-wrap{display:flex;gap:.5rem;align-items:center;}
+
+    /* 지병 칩 */
+    .disease-chip input[type=checkbox]{display:none;}
+    .disease-chip label{display:inline-block;border:1.5px solid #d1d9e6;border-radius:999px;padding:.3rem .9rem;font-size:.82rem;cursor:pointer;transition:all .15s;user-select:none;}
+    .disease-chip input:checked+label{background:#1565c0;color:#fff;border-color:#1565c0;}
+
+    /* BMI */
+    .bmi-badge{font-size:.85rem;padding:.3rem .8rem;border-radius:999px;font-weight:600;}
+
+    /* 보기 페이지 카드 */
+    .view-card{background:#fff;border-radius:14px;box-shadow:0 2px 10px rgba(0,0,0,.06);padding:1.2rem;border-left:4px solid #1565c0;transition:box-shadow .2s;}
+    .view-card:hover{box-shadow:0 4px 18px rgba(0,0,0,.12);}
+    .view-card .badge-time{background:#e3f2fd;color:#1565c0;border-radius:999px;padding:.2rem .6rem;font-size:.75rem;font-weight:600;}
+    .empty-state{text-align:center;padding:3rem 1rem;color:#999;}
+    .empty-state i{font-size:3rem;margin-bottom:1rem;display:block;opacity:.4;}
+
+    /* 진료 기록 카드 */
+    .record-card{background:#fff;border-radius:14px;box-shadow:0 2px 10px rgba(0,0,0,.06);padding:1.2rem;transition:box-shadow .2s;cursor:pointer;}
+    .record-card:hover{box-shadow:0 6px 20px rgba(0,0,0,.12);}
+    .dept-badge{display:inline-block;background:#e8f5e9;color:#2e7d32;border-radius:999px;padding:.2rem .7rem;font-size:.78rem;font-weight:600;}
+    .record-actions{display:flex;gap:.4rem;}
+
+    /* 진료 기록 폼 슬라이드 패널 */
+    .slide-panel-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:8000;}
+    .slide-panel-overlay.show{display:flex;align-items:flex-end;justify-content:center;}
+    .slide-panel{background:#fff;border-radius:24px 24px 0 0;width:100%;max-width:720px;max-height:92vh;overflow-y:auto;animation:slideUp .3s ease;padding:1.5rem;}
+    @keyframes slideUp{from{transform:translateY(100%);}to{transform:translateY(0);}}
+    .panel-handle{width:40px;height:4px;background:#d1d9e6;border-radius:999px;margin:0 auto .8rem;}
+    .panel-drag{cursor:grab;}
+
+    /* 처방 약물 태그 (진료기록) */
+    .rx-tag{display:inline-flex;align-items:center;gap:.3rem;background:#e8f5e9;color:#2e7d32;border-radius:999px;padding:.2rem .7rem;font-size:.82rem;font-weight:600;margin:.2rem;}
+    .rx-tag button{background:none;border:none;color:#2e7d32;cursor:pointer;padding:0;}
+
+    /* 토스트 */
+    .toast-wrap{position:fixed;bottom:1.5rem;right:1.5rem;z-index:9999;}
+    .toast-item{background:#1b5e20;color:#fff;border-radius:12px;padding:.75rem 1.2rem;margin-top:.5rem;display:flex;align-items:center;gap:.5rem;font-size:.9rem;font-weight:500;animation:slideIn .25s ease;box-shadow:0 4px 16px rgba(0,0,0,.2);}
+    .toast-item.toast-err{background:#b71c1c;}
+    @keyframes slideIn{from{transform:translateX(100px);opacity:0;}to{transform:translateX(0);opacity:1;}}
+
+    /* FAB 버튼 */
+    .fab{position:fixed;bottom:2rem;right:2rem;z-index:500;width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,#1565c0,#0d47a1);color:#fff;border:none;font-size:1.5rem;box-shadow:0 4px 16px rgba(21,101,192,.45);transition:transform .2s;}
+    .fab:hover{transform:scale(1.1);}
+  </style>
+</head>
+<body>
+
+<!-- ============================================================
+  PAGE 1: 로그인
+  ============================================================ -->
+<div id="loginPage" class="page active align-items-center justify-content-center p-3">
+  <div class="auth-card">
+    <div class="icon-circle bg-primary bg-opacity-10">
+      <i class="bi bi-heart-pulse-fill text-primary" style="font-size:2rem;"></i>
+    </div>
+    <h4 class="text-center fw-bold mb-1">헬스케어 플랫폼</h4>
+    <p class="text-center text-muted small mb-4">로그인하여 건강 정보를 관리하세요</p>
+    <div id="loginError" class="alert-error mb-3" style="display:none;">
+      <i class="bi bi-exclamation-circle-fill"></i><span id="loginErrorMsg"></span>
+    </div>
+    <form id="loginForm" novalidate>
+      <div class="mb-3">
+        <label class="form-label fw-500">이메일</label>
+        <div class="input-group">
+          <span class="input-group-text"><i class="bi bi-envelope"></i></span>
+          <input id="loginEmail" type="email" class="form-control" placeholder="example@email.com" autocomplete="email"/>
+        </div>
+      </div>
+      <div class="mb-4">
+        <label class="form-label fw-500">비밀번호</label>
+        <div class="input-group">
+          <span class="input-group-text"><i class="bi bi-lock"></i></span>
+          <input id="loginPw" type="password" class="form-control" placeholder="비밀번호 입력" autocomplete="current-password"/>
+          <button type="button" class="btn-eye btn" onclick="togglePw('loginPw',this)"><i class="bi bi-eye"></i></button>
+        </div>
+      </div>
+      <button type="submit" class="btn btn-primary-main w-100 mb-3">
+        <i class="bi bi-box-arrow-in-right me-1"></i> 로그인
+      </button>
+    </form>
+    <div class="divider-text"><span>또는</span></div>
+    <button class="btn btn-outline-main w-100 mt-1" onclick="showPage('registerPage')">계정이 없으신가요? &nbsp;<strong>회원가입</strong></button>
+  </div>
+</div>
+
+
+<!-- ============================================================
+  PAGE 2: 회원가입
+  ============================================================ -->
+<div id="registerPage" class="page align-items-center justify-content-center p-3">
+  <div class="auth-card" style="max-width:480px;">
+    <div class="icon-circle bg-success bg-opacity-10">
+      <i class="bi bi-person-plus-fill text-success" style="font-size:2rem;"></i>
+    </div>
+    <h4 class="text-center fw-bold mb-1">회원가입</h4>
+    <p class="text-center text-muted small mb-4">헬스케어 플랫폼에 오신 것을 환영합니다</p>
+    <form id="registerForm" novalidate>
+      <div class="mb-3">
+        <label class="form-label fw-500">이메일 <span class="text-danger">*</span></label>
+        <div class="input-group">
+          <span class="input-group-text"><i class="bi bi-envelope"></i></span>
+          <input id="regEmail" type="email" class="form-control" placeholder="example@email.com"/>
+        </div>
+        <div id="regEmailErr" class="invalid-feedback" style="display:none;"></div>
+      </div>
+      <div class="mb-3">
+        <label class="form-label fw-500">이름 <span class="text-danger">*</span></label>
+        <div class="input-group">
+          <span class="input-group-text"><i class="bi bi-person"></i></span>
+          <input id="regName" type="text" class="form-control" placeholder="홍길동" maxlength="10" oninput="updateCounter('regName','regNameCount')"/>
+        </div>
+        <div class="d-flex justify-content-between">
+          <div id="regNameErr" class="invalid-feedback" style="display:none;"></div>
+          <div class="char-counter ms-auto"><span id="regNameCount">0</span>/10자</div>
+        </div>
+      </div>
+      <div class="mb-1">
+        <label class="form-label fw-500">비밀번호 <span class="text-danger">*</span></label>
+        <div class="input-group">
+          <span class="input-group-text"><i class="bi bi-lock"></i></span>
+          <input id="regPw" type="password" class="form-control" placeholder="4~10자" maxlength="10" oninput="updatePwStrength();updateCounter('regPw','regPwCount')"/>
+          <button type="button" class="btn-eye btn" onclick="togglePw('regPw',this)"><i class="bi bi-eye"></i></button>
+        </div>
+        <div class="d-flex justify-content-between">
+          <div id="regPwErr" class="invalid-feedback" style="display:none;"></div>
+          <div class="char-counter ms-auto"><span id="regPwCount">0</span>/10자</div>
+        </div>
+      </div>
+      <div class="mb-3 px-1">
+        <div class="bg-light rounded" style="height:6px;overflow:hidden;"><div id="pwStrengthBar" class="strength-bar" style="width:0%;"></div></div>
+        <div id="pwStrengthLabel" class="small mt-1" style="min-height:1.2em;"></div>
+      </div>
+      <div class="mb-4">
+        <label class="form-label fw-500">비밀번호 확인 <span class="text-danger">*</span></label>
+        <div class="input-group">
+          <span class="input-group-text"><i class="bi bi-lock-fill"></i></span>
+          <input id="regPwConfirm" type="password" class="form-control" placeholder="비밀번호 재입력" maxlength="10"/>
+          <button type="button" class="btn-eye btn" onclick="togglePw('regPwConfirm',this)"><i class="bi bi-eye"></i></button>
+        </div>
+        <div id="regPwConfirmErr" class="invalid-feedback" style="display:none;"></div>
+      </div>
+      <button type="submit" class="btn btn-primary-main w-100 mb-3">
+        <i class="bi bi-person-check me-1"></i> 가입하기
+      </button>
+    </form>
+    <div class="divider-text"><span>또는</span></div>
+    <button class="btn btn-outline-main w-100 mt-1" onclick="showPage('loginPage')">이미 계정이 있으신가요? &nbsp;<strong>로그인</strong></button>
+  </div>
+</div>
+
+
+<!-- ============================================================
+  PAGE 3: 메인
+  ============================================================ -->
+<div id="mainPage" class="page flex-column inner-page">
+  <div class="topbar">
+    <i class="bi bi-heart-pulse-fill fs-5"></i>
+    <span class="fw-bold fs-5 me-auto">헬스케어 플랫폼</span>
+    <div class="user-chip"><i class="bi bi-person-circle"></i><span id="topbarEmail"></span></div>
+    <button class="btn btn-sm btn-light text-primary fw-bold ms-2" onclick="handleLogout()">
+      <i class="bi bi-box-arrow-right me-1"></i>로그아웃
+    </button>
+  </div>
+  <div class="container py-4" style="max-width:960px;">
+    <div class="hero-card mb-4 d-flex align-items-center gap-3">
+      <div class="avatar-circle"><span id="mainInitial">?</span></div>
+      <div>
+        <h5 class="fw-bold mb-1">안녕하세요, <span id="mainName"></span>님! 👋</h5>
+        <p class="mb-0 opacity-75 small"><span id="mainEmail"></span> · 오늘도 건강한 하루 되세요.</p>
+      </div>
+    </div>
+    <div class="text-center mb-3">
+      <span class="badge bg-white text-secondary border px-3 py-2 rounded-pill">서비스 메뉴</span>
+    </div>
+    <div class="row g-3">
+      <div class="col-sm-6 col-md-4" onclick="openHealthPage()">
+        <div class="card feature-card h-100 p-3">
+          <div class="feature-icon-box" style="background:#ffebee;color:#e53935;"><i class="bi bi-heart-pulse"></i></div>
+          <h6 class="fw-bold">내 건강 정보</h6>
+          <p class="text-muted small mb-0">기본 건강 정보(키, 몸무게, 혈액형 등)를 입력·관리합니다.</p>
+        </div>
+      </div>
+      <div class="col-sm-6 col-md-4" onclick="openMedicalRecordsPage()">
+        <div class="card feature-card h-100 p-3">
+          <div class="feature-icon-box" style="background:#e3f2fd;color:#1565c0;"><i class="bi bi-hospital"></i></div>
+          <h6 class="fw-bold">진료 기록</h6>
+          <p class="text-muted small mb-0">병원 방문 내역, 진단명, 처방 정보를 기록·조회합니다.</p>
+        </div>
+      </div>
+      <div class="col-sm-6 col-md-4" onclick="openMedicationsViewPage()">
+        <div class="card feature-card h-100 p-3">
+          <div class="feature-icon-box" style="background:#e8f5e9;color:#2e7d32;"><i class="bi bi-capsule"></i></div>
+          <h6 class="fw-bold">복용 약물</h6>
+          <p class="text-muted small mb-0">현재 복용 중인 약물과 영양제를 확인합니다.</p>
+        </div>
+      </div>
+      <div class="col-sm-6 col-md-4" onclick="openVaccinationsViewPage()">
+        <div class="card feature-card h-100 p-3">
+          <div class="feature-icon-box" style="background:#f3e5f5;color:#6a1b9a;"><i class="bi bi-syringe"></i></div>
+          <h6 class="fw-bold">접종 이력</h6>
+          <p class="text-muted small mb-0">예방접종 이력과 접종 날짜·병원을 확인합니다.</p>
+        </div>
+      </div>
+      <div class="col-sm-6 col-md-4">
+        <div class="card feature-card h-100 p-3" style="opacity:.6;">
+          <div class="feature-icon-box" style="background:#fff3e0;color:#e65100;"><i class="bi bi-clipboard2-pulse"></i></div>
+          <h6 class="fw-bold">자가진단 <span class="badge bg-secondary" style="font-size:.65rem;">준비중</span></h6>
+          <p class="text-muted small mb-0">건강 설문과 증상을 직접 기록합니다.</p>
+        </div>
+      </div>
+      <div class="col-sm-6 col-md-4">
+        <div class="card feature-card h-100 p-3" style="opacity:.6;">
+          <div class="feature-icon-box" style="background:#e0f7fa;color:#00838f;"><i class="bi bi-bell"></i></div>
+          <h6 class="fw-bold">복약 알림 <span class="badge bg-secondary" style="font-size:.65rem;">준비중</span></h6>
+          <p class="text-muted small mb-0">정해진 시간에 복약 알림을 받습니다.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ============================================================
+  PAGE 4: 내 건강 정보 입력
+  ============================================================ -->
+<div id="healthPage" class="page inner-page">
+  <div class="topbar">
+    <button class="btn btn-sm btn-light text-primary fw-bold me-1" onclick="goBack('mainPage')"><i class="bi bi-arrow-left"></i></button>
+    <i class="bi bi-heart-pulse-fill fs-5"></i>
+    <span class="fw-bold fs-5 me-auto">내 건강 정보</span>
+    <div class="user-chip"><i class="bi bi-person-circle"></i><span id="healthTopEmail"></span></div>
+  </div>
+  <div class="inner-scroll container py-4" style="max-width:860px;">
+    <ul class="nav health-nav-tabs mb-0 px-1" id="healthTabs">
+      <li class="nav-item"><button class="nav-link active" data-tab="basicInfo"><i class="bi bi-person-vcard me-1"></i>기본 정보</button></li>
+      <li class="nav-item"><button class="nav-link" data-tab="medications"><i class="bi bi-capsule me-1"></i>복용 약물</button></li>
+      <li class="nav-item"><button class="nav-link" data-tab="allergies"><i class="bi bi-exclamation-triangle me-1"></i>알러지</button></li>
+      <li class="nav-item"><button class="nav-link" data-tab="diseases"><i class="bi bi-clipboard2-pulse me-1"></i>지병</button></li>
+      <li class="nav-item"><button class="nav-link" data-tab="vaccinations"><i class="bi bi-syringe me-1"></i>접종 이력</button></li>
+    </ul>
+
+    <!-- 기본 정보 -->
+    <div id="tab-basicInfo" class="health-tab-content">
+      <div class="section-header">
+        <h6 class="fw-bold mb-0"><i class="bi bi-person-vcard text-primary me-2"></i>기본 건강 정보</h6>
+        <button class="btn btn-save" onclick="saveBasicInfo()"><i class="bi bi-floppy me-1"></i>저장</button>
+      </div>
+      <div class="row g-3">
+        <div class="col-sm-6">
+          <label class="form-label fw-500 small">생년월일</label>
+          <input id="hi-birthdate" type="date" class="form-control"/>
+        </div>
+        <div class="col-sm-6">
+          <label class="form-label fw-500 small">성별</label>
+          <div class="d-flex gap-3 pt-2">
+            <div class="form-check"><input class="form-check-input" type="radio" name="gender" id="g-male" value="male"/><label class="form-check-label" for="g-male">남성</label></div>
+            <div class="form-check"><input class="form-check-input" type="radio" name="gender" id="g-female" value="female"/><label class="form-check-label" for="g-female">여성</label></div>
+            <div class="form-check"><input class="form-check-input" type="radio" name="gender" id="g-other" value="other"/><label class="form-check-label" for="g-other">기타</label></div>
+          </div>
+        </div>
+        <div class="col-sm-4">
+          <label class="form-label fw-500 small">키 (cm)</label>
+          <input id="hi-height" type="number" class="form-control" placeholder="예: 170" min="50" max="250" oninput="calcBmi()"/>
+        </div>
+        <div class="col-sm-4">
+          <label class="form-label fw-500 small">몸무게 (kg)</label>
+          <input id="hi-weight" type="number" class="form-control" placeholder="예: 65" min="10" max="300" oninput="calcBmi()"/>
+        </div>
+        <div class="col-sm-4">
+          <label class="form-label fw-500 small">혈액형</label>
+          <select id="hi-bloodtype" class="form-select">
+            <option value="">선택</option>
+            <option>A+</option><option>A-</option><option>B+</option><option>B-</option>
+            <option>O+</option><option>O-</option><option>AB+</option><option>AB-</option>
+            <option value="unknown">모름</option>
+          </select>
+        </div>
+        <div class="col-12">
+          <div id="bmiResult" class="d-none p-3 rounded-3 d-flex align-items-center gap-2" style="background:#f0f9ff;border:1.5px solid #bae6fd;">
+            <i class="bi bi-activity text-info fs-5"></i>
+            <span class="fw-500 small">BMI: <strong id="bmiValue"></strong></span>
+            <span id="bmiBadge" class="bmi-badge"></span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 복용 약물 -->
+    <div id="tab-medications" class="health-tab-content" style="display:none;">
+      <div class="section-header">
+        <h6 class="fw-bold mb-0"><i class="bi bi-capsule text-success me-2"></i>복용 약물 / 영양제</h6>
+        <button class="btn btn-save" onclick="saveMedications()"><i class="bi bi-floppy me-1"></i>저장</button>
+      </div>
+      <div id="medicationList" class="d-flex flex-column gap-3 mb-3"></div>
+      <button class="btn-add-item btn" onclick="addMedicationItem()"><i class="bi bi-plus-circle me-1"></i> 약물 / 영양제 추가</button>
+    </div>
+
+    <!-- 알러지 -->
+    <div id="tab-allergies" class="health-tab-content" style="display:none;">
+      <div class="section-header">
+        <h6 class="fw-bold mb-0"><i class="bi bi-exclamation-triangle text-warning me-2"></i>알러지 정보</h6>
+        <button class="btn btn-save" onclick="saveAllergies()"><i class="bi bi-floppy me-1"></i>저장</button>
+      </div>
+      <div class="mb-4">
+        <label class="form-label fw-bold small text-danger mb-2"><i class="bi bi-capsule me-1"></i>약물 알러지</label>
+        <div class="tag-input-wrap mb-2">
+          <input id="drugAllergyInput" type="text" class="form-control" placeholder="약물명 입력 (Enter 또는 쉼표로 여러 개 가능)" onkeydown="if(event.key==='Enter'){event.preventDefault();addAllergyTag('drug')}"/>
+          <button class="btn btn-outline-danger btn-sm px-3 rounded-3 text-nowrap" onclick="addAllergyTag('drug')">추가</button>
+        </div>
+        <div id="drugAllergyTags"></div>
+      </div>
+      <div>
+        <label class="form-label fw-bold small mb-2" style="color:#b45309;"><i class="bi bi-egg-fried me-1"></i>식품 알러지</label>
+        <div class="tag-input-wrap mb-2">
+          <input id="foodAllergyInput" type="text" class="form-control" placeholder="식품명 입력 (Enter 또는 쉼표로 여러 개 가능)" onkeydown="if(event.key==='Enter'){event.preventDefault();addAllergyTag('food')}"/>
+          <button class="btn btn-outline-warning btn-sm px-3 rounded-3 text-nowrap" onclick="addAllergyTag('food')">추가</button>
+        </div>
+        <div id="foodAllergyTags"></div>
+      </div>
+    </div>
+
+    <!-- 지병 -->
+    <div id="tab-diseases" class="health-tab-content" style="display:none;">
+      <div class="section-header">
+        <h6 class="fw-bold mb-0"><i class="bi bi-clipboard2-pulse text-danger me-2"></i>지병 / 만성질환</h6>
+        <button class="btn btn-save" onclick="saveDiseases()"><i class="bi bi-floppy me-1"></i>저장</button>
+      </div>
+      <p class="text-muted small mb-3">해당하는 질환을 모두 선택하세요.</p>
+      <div class="d-flex flex-wrap gap-2 mb-4" id="diseaseChips"></div>
+      <label class="form-label fw-500 small">직접 입력 (기타)</label>
+      <textarea id="diseaseCustom" class="form-control" rows="3" placeholder="위 목록에 없는 질환을 입력하세요."></textarea>
+    </div>
+
+    <!-- 접종 이력 -->
+    <div id="tab-vaccinations" class="health-tab-content" style="display:none;">
+      <div class="section-header">
+        <h6 class="fw-bold mb-0"><i class="bi bi-syringe text-primary me-2"></i>예방접종 이력</h6>
+        <button class="btn btn-save" onclick="saveVaccinations()"><i class="bi bi-floppy me-1"></i>저장</button>
+      </div>
+      <div id="vaccinationList" class="d-flex flex-column gap-3 mb-3"></div>
+      <button class="btn-add-item btn" onclick="addVaccinationItem()"><i class="bi bi-plus-circle me-1"></i> 접종 이력 추가</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- ============================================================
+  PAGE 5: 복용 약물 보기
+  ============================================================ -->
+<div id="medicationsViewPage" class="page inner-page">
+  <div class="topbar">
+    <button class="btn btn-sm btn-light text-primary fw-bold me-1" onclick="goBack('mainPage')"><i class="bi bi-arrow-left"></i></button>
+    <i class="bi bi-capsule fs-5"></i>
+    <span class="fw-bold fs-5 me-auto">복용 약물</span>
+    <button class="btn btn-sm btn-light fw-bold" onclick="openHealthPage('medications')">
+      <i class="bi bi-pencil me-1"></i>편집
+    </button>
+  </div>
+  <div class="inner-scroll container py-4" style="max-width:860px;">
+    <div id="medViewList"></div>
+  </div>
+</div>
+
+
+<!-- ============================================================
+  PAGE 6: 접종 이력 보기
+  ============================================================ -->
+<div id="vaccinationsViewPage" class="page inner-page">
+  <div class="topbar">
+    <button class="btn btn-sm btn-light text-primary fw-bold me-1" onclick="goBack('mainPage')"><i class="bi bi-arrow-left"></i></button>
+    <i class="bi bi-syringe fs-5"></i>
+    <span class="fw-bold fs-5 me-auto">접종 이력</span>
+    <button class="btn btn-sm btn-light fw-bold" onclick="openHealthPage('vaccinations')">
+      <i class="bi bi-pencil me-1"></i>편집
+    </button>
+  </div>
+  <div class="inner-scroll container py-4" style="max-width:860px;">
+    <div id="vacViewList"></div>
+  </div>
+</div>
+
+
+<!-- ============================================================
+  PAGE 7: 진료 기록
+  ============================================================ -->
+<div id="medicalRecordsPage" class="page inner-page">
+  <div class="topbar">
+    <button class="btn btn-sm btn-light text-primary fw-bold me-1" onclick="goBack('mainPage')"><i class="bi bi-arrow-left"></i></button>
+    <i class="bi bi-hospital fs-5"></i>
+    <span class="fw-bold fs-5 me-auto">진료 기록</span>
+    <div class="user-chip"><i class="bi bi-person-circle"></i><span id="mrTopEmail"></span></div>
+  </div>
+  <div class="inner-scroll container py-4" style="max-width:860px;">
+    <div id="medRecordList"></div>
+  </div>
+  <!-- FAB 추가 버튼 -->
+  <button class="fab" onclick="openRecordPanel(null)" title="새 진료 기록 추가">
+    <i class="bi bi-plus-lg"></i>
+  </button>
+</div>
+
+
+<!-- ============================================================
+  진료 기록 슬라이드 패널 (추가/수정)
+  ============================================================ -->
+<div id="recordPanelOverlay" class="slide-panel-overlay" onclick="closePanelOutside(event)">
+  <div class="slide-panel">
+    <div class="panel-handle panel-drag"></div>
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <h6 class="fw-bold mb-0" id="panelTitle">새 진료 기록</h6>
+      <button class="btn btn-sm btn-outline-secondary rounded-3" onclick="closeRecordPanel()">
+        <i class="bi bi-x-lg"></i>
+      </button>
+    </div>
+
+    <div class="row g-3">
+      <div class="col-sm-6">
+        <label class="form-label fw-500 small">날짜 <span class="text-danger">*</span></label>
+        <input id="rf-date" type="date" class="form-control"/>
+        <div id="rf-dateErr" class="invalid-feedback" style="display:none;"></div>
+      </div>
+      <div class="col-sm-6">
+        <label class="form-label fw-500 small">병원명 <span class="text-danger">*</span></label>
+        <input id="rf-hospital" type="text" class="form-control" placeholder="예: 서울대학교병원"/>
+        <div id="rf-hospitalErr" class="invalid-feedback" style="display:none;"></div>
+      </div>
+      <div class="col-sm-6">
+        <label class="form-label fw-500 small">진료과</label>
+        <select id="rf-dept" class="form-select">
+          <option value="">선택</option>
+          <option>내과</option><option>외과</option><option>정형외과</option>
+          <option>피부과</option><option>안과</option><option>이비인후과</option>
+          <option>치과</option><option>산부인과</option><option>소아청소년과</option>
+          <option>신경과</option><option>정신건강의학과</option><option>응급의학과</option>
+          <option>가정의학과</option><option>기타</option>
+        </select>
+      </div>
+      <div class="col-sm-6">
+        <label class="form-label fw-500 small">주증상</label>
+        <input id="rf-symptoms" type="text" class="form-control" placeholder="예: 두통, 발열, 기침"/>
+      </div>
+      <div class="col-12">
+        <label class="form-label fw-500 small">진단 내용</label>
+        <textarea id="rf-diagnosis" class="form-control" rows="2" placeholder="예: 급성 상기도염, 고혈압 1기"></textarea>
+      </div>
+      <div class="col-12">
+        <label class="form-label fw-500 small mb-2">처방 약물</label>
+        <div class="tag-input-wrap mb-2">
+          <input id="rf-rxInput" type="text" class="form-control form-control-sm" placeholder="약물명 입력 후 Enter 또는 추가" onkeydown="if(event.key==='Enter'){event.preventDefault();addRxTag()}"/>
+          <button class="btn btn-outline-success btn-sm px-3 rounded-3 text-nowrap" onclick="addRxTag()">추가</button>
+        </div>
+        <div id="rf-rxTags"></div>
+      </div>
+      <div class="col-12">
+        <label class="form-label fw-500 small">메모 / 특이사항</label>
+        <textarea id="rf-notes" class="form-control" rows="2" placeholder="예: 2주 후 재진 예약, 수술 전 검사 필요"></textarea>
+      </div>
+    </div>
+
+    <div class="d-flex gap-2 mt-4">
+      <button class="btn btn-save flex-fill py-2" onclick="saveRecord()">
+        <i class="bi bi-floppy me-1"></i> 저장
+      </button>
+      <button class="btn btn-outline-secondary rounded-3 px-4" onclick="closeRecordPanel()">취소</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- 성공 모달 (회원가입 완료) -->
+<div id="successModal" class="modal-overlay" onclick="closeSuccessModal(event)">
+  <div class="modal-box text-center">
+    <div style="font-size:3.5rem;line-height:1;">✅</div>
+    <h5 class="fw-bold mt-2 mb-1">회원가입 완료!</h5>
+    <p class="text-muted small mb-3">
+      <strong id="successName" class="text-primary"></strong>님, 환영합니다! 🎉<br>가입이 성공적으로 완료되었습니다.
+    </p>
+    <button class="btn btn-primary-main w-100" onclick="goToLogin()">
+      <i class="bi bi-box-arrow-in-right me-1"></i> 로그인하러 가기
+    </button>
+  </div>
+</div>
+
+<!-- 토스트 -->
+<div class="toast-wrap" id="toastWrap"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+/* ================================================================
+   ① 상수 & 초기 상태 — 최상단 선언 (TDZ 방지)
+   ================================================================ */
+const USERS_KEY   = 'health_users'
+const SESSION_KEY = 'health_session'
+const EMAIL_RE    = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+const HEALTH_KEY  = (e) => `health_info_${e}`
+const MR_KEY      = (e) => `medical_records_${e}`
+
+const DISEASE_LIST = [
+  '당뇨(제1형)','당뇨(제2형)','고혈압','고지혈증','심장질환',
+  '뇌혈관질환','갑상선질환','신장질환','간질환','폐질환',
+  '암(악성종양)','골다공증','천식','관절염','우울증/불안장애'
+]
+const DEPT_COLORS = {
+  '내과':'#e3f2fd','외과':'#fce4ec','정형외과':'#f3e5f5','피부과':'#fff9c4',
+  '안과':'#e8f5e9','이비인후과':'#e0f7fa','치과':'#fff3e0','산부인과':'#fce4ec',
+  '소아청소년과':'#e8f5e9','신경과':'#e8eaf6','정신건강의학과':'#f3e5f5',
+  '응급의학과':'#ffebee','가정의학과':'#e0f2f1','기타':'#f5f5f5',''  :'#f5f5f5'
+}
+
+let medications   = []
+let vaccinations  = []
+let allergies     = { drug:[], food:[] }
+let rxTags        = []          // 진료기록 처방 태그
+let editingRecord = null        // 수정 중인 진료 기록 ID
+
+/* ================================================================
+   ② 유틸
+   ================================================================ */
+const esc = v => String(v??'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+const uid = () => Math.random().toString(36).slice(2,9)
+const fmt = d => d ? d.replace(/-/g,'.') : ''
+const today = () => new Date().toISOString().slice(0,10)
+
+function showPage(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'))
+  document.getElementById(id).classList.add('active')
+  window.scrollTo(0,0)
+}
+function goBack(to) { showPage(to) }
+
+function togglePw(inputId, btn) {
+  const inp = document.getElementById(inputId)
+  inp.type  = inp.type === 'password' ? 'text' : 'password'
+  btn.querySelector('i').className = inp.type==='password' ? 'bi bi-eye' : 'bi bi-eye-slash'
+}
+function updateCounter(inputId, countId) {
+  document.getElementById(countId).textContent = document.getElementById(inputId).value.length
+}
+
+function showToast(msg, err=false) {
+  const wrap = document.getElementById('toastWrap')
+  const el   = document.createElement('div')
+  el.className = 'toast-item' + (err ? ' toast-err' : '')
+  const ic = document.createElement('i')
+  ic.className = err ? 'bi bi-x-circle-fill' : 'bi bi-check-circle-fill'
+  el.appendChild(ic)
+  el.appendChild(document.createTextNode(' '+msg))
+  wrap.appendChild(el)
+  setTimeout(()=>el.remove(), 2800)
+}
+function showFieldErr(id, msg) {
+  const el = document.getElementById(id)
+  el.textContent = msg; el.style.display = msg ? 'block' : 'none'
+}
+function clearFieldErrs(...ids) { ids.forEach(id => showFieldErr(id,'')) }
+
+/* ================================================================
+   ③ 인증
+   ================================================================ */
+async function hashPassword(pw) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(pw))
+  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('')
+}
+const getUsers    = ()    => JSON.parse(localStorage.getItem(USERS_KEY)||'[]')
+const saveUsers   = arr   => localStorage.setItem(USERS_KEY, JSON.stringify(arr))
+const emailExists = email => getUsers().some(u=>u.email===email.toLowerCase())
+const setSession  = user  => localStorage.setItem(SESSION_KEY, JSON.stringify({email:user.email,name:user.name}))
+const getSession  = ()    => JSON.parse(localStorage.getItem(SESSION_KEY)||'null')
+const clearSession= ()    => localStorage.removeItem(SESSION_KEY)
+
+/* ================================================================
+   ④ 회원가입
+   ================================================================ */
+function updatePwStrength() {
+  const pw=document.getElementById('regPw').value
+  const bar=document.getElementById('pwStrengthBar'), lbl=document.getElementById('pwStrengthLabel')
+  if(!pw){bar.style.width='0%';lbl.textContent='';lbl.style.color='';return}
+  if(pw.length<4){bar.style.cssText='width:25%;background:#dc3545;';lbl.textContent='취약';lbl.style.color='#dc3545'}
+  else if(pw.length<7){bar.style.cssText='width:60%;background:#fd7e14;';lbl.textContent='보통';lbl.style.color='#fd7e14'}
+  else{bar.style.cssText='width:100%;background:#198754;';lbl.textContent='강함';lbl.style.color='#198754'}
+}
+
+function validateRegister(email,name,pw,pwc){
+  let ok=true
+  clearFieldErrs('regEmailErr','regNameErr','regPwErr','regPwConfirmErr')
+  if(!email)                   {showFieldErr('regEmailErr','이메일을 입력해주세요.');ok=false}
+  else if(!EMAIL_RE.test(email)){showFieldErr('regEmailErr','올바른 이메일 형식이 아닙니다.');ok=false}
+  else if(emailExists(email))  {showFieldErr('regEmailErr','이미 등록된 이메일입니다.');ok=false}
+  if(!name.trim())             {showFieldErr('regNameErr','이름을 입력해주세요.');ok=false}
+  else if(name.length>10)      {showFieldErr('regNameErr','이름은 10자 이내로 입력해주세요.');ok=false}
+  if(!pw)                      {showFieldErr('regPwErr','비밀번호를 입력해주세요.');ok=false}
+  else if(pw.length<4)         {showFieldErr('regPwErr','4자 이상 입력해주세요.');ok=false}
+  if(!pwc)                     {showFieldErr('regPwConfirmErr','비밀번호 확인을 입력해주세요.');ok=false}
+  else if(pw!==pwc)            {showFieldErr('regPwConfirmErr','비밀번호가 일치하지 않습니다.');ok=false}
+  return ok
+}
+
+document.getElementById('registerForm').addEventListener('submit', async function(e){
+  e.preventDefault()
+  const email=document.getElementById('regEmail').value.trim()
+  const name=document.getElementById('regName').value.trim()
+  const pw=document.getElementById('regPw').value
+  const pwc=document.getElementById('regPwConfirm').value
+  if(!validateRegister(email,name,pw,pwc)) return
+  const btn=this.querySelector('[type=submit]')
+  btn.disabled=true; btn.innerHTML='<span class="spinner-border spinner-border-sm me-1"></span>처리 중...'
+  const hashed=await hashPassword(pw)
+  const users=getUsers(); users.push({email:email.toLowerCase(),name,password:hashed}); saveUsers(users)
+  btn.disabled=false; btn.innerHTML='<i class="bi bi-person-check me-1"></i> 가입하기'
+  document.getElementById('successName').textContent=name
+  document.getElementById('successModal').classList.add('show')
+})
+
+function closeSuccessModal(e){if(e.target===document.getElementById('successModal'))goToLogin()}
+function goToLogin(){
+  document.getElementById('successModal').classList.remove('show')
+  document.getElementById('registerForm').reset()
+  document.getElementById('regNameCount').textContent='0'
+  document.getElementById('regPwCount').textContent='0'
+  document.getElementById('pwStrengthBar').style.width='0%'
+  document.getElementById('pwStrengthLabel').textContent=''
+  clearFieldErrs('regEmailErr','regNameErr','regPwErr','regPwConfirmErr')
+  showPage('loginPage')
+}
+
+/* ================================================================
+   ⑤ 로그인
+   ================================================================ */
+function showLoginError(msg){
+  document.getElementById('loginErrorMsg').textContent=msg
+  document.getElementById('loginError').style.display=msg?'flex':'none'
+}
+document.getElementById('loginForm').addEventListener('submit', async function(e){
+  e.preventDefault()
+  showLoginError('')
+  const email=document.getElementById('loginEmail').value.trim()
+  const pw=document.getElementById('loginPw').value
+  if(!email||!pw){showLoginError('이메일과 비밀번호를 모두 입력해주세요.');return}
+  const btn=this.querySelector('[type=submit]')
+  btn.disabled=true; btn.innerHTML='<span class="spinner-border spinner-border-sm me-1"></span>로그인 중...'
+  const hashed=await hashPassword(pw)
+  const user=getUsers().find(u=>u.email===email.toLowerCase()&&u.password===hashed)
+  btn.disabled=false; btn.innerHTML='<i class="bi bi-box-arrow-in-right me-1"></i> 로그인'
+  if(user){setSession(user);renderMain(user);showPage('mainPage')}
+  else showLoginError('이메일 또는 비밀번호가 올바르지 않습니다.')
+})
+
+/* ================================================================
+   ⑥ 메인 페이지
+   ================================================================ */
+function renderMain(user){
+  document.getElementById('topbarEmail').textContent=user.email
+  document.getElementById('mainInitial').textContent=(user.name?.[0]??'?').toUpperCase()
+  document.getElementById('mainName').textContent=user.name
+  document.getElementById('mainEmail').textContent=user.email
+}
+function handleLogout(){
+  clearSession()
+  document.getElementById('loginEmail').value=''
+  document.getElementById('loginPw').value=''
+  showLoginError('')
+  showPage('loginPage')
+}
+
+/* ================================================================
+   ⑦ 건강 정보 localStorage 헬퍼
+   ================================================================ */
+function getHealthData(){
+  const s=getSession(); return s?JSON.parse(localStorage.getItem(HEALTH_KEY(s.email))||'{}'):{}
+}
+function saveHealthDataAll(data){
+  const s=getSession(); if(s) localStorage.setItem(HEALTH_KEY(s.email),JSON.stringify(data))
+}
+
+/* ================================================================
+   ⑧ 건강 정보 페이지 — 열기 / 탭 전환
+   ================================================================ */
+function openHealthPage(tabId='basicInfo'){
+  const s=getSession(); if(!s) return
+  document.getElementById('healthTopEmail').textContent=s.email
+  loadAllHealthData()
+  document.querySelectorAll('#healthTabs .nav-link').forEach(b=>b.classList.remove('active'))
+  document.querySelector(`#healthTabs [data-tab="${tabId}"]`)?.classList.add('active')
+  showHealthTab(tabId)
+  showPage('healthPage')
+}
+function showHealthTab(tabId){
+  ['basicInfo','medications','allergies','diseases','vaccinations'].forEach(t=>{
+    document.getElementById('tab-'+t).style.display=t===tabId?'block':'none'
+  })
+}
+document.querySelectorAll('#healthTabs .nav-link').forEach(btn=>{
+  btn.addEventListener('click',function(){
+    document.querySelectorAll('#healthTabs .nav-link').forEach(b=>b.classList.remove('active'))
+    this.classList.add('active')
+    showHealthTab(this.dataset.tab)
+  })
+})
+
+/* ================================================================
+   ⑨ 건강 정보 — 전체 로드
+   ================================================================ */
+function loadAllHealthData(){
+  const d=getHealthData()
+  loadBasicInfo(d.basicInfo||{})
+  loadMedications(d.medications||[])
+  loadAllergies(d.allergies||{drug:[],food:[]})
+  loadDiseases(d.diseases||{selected:[],custom:''})
+  loadVaccinations(d.vaccinations||[])
+}
+
+/* ================================================================
+   ⑩ Tab1: 기본 정보
+   ================================================================ */
+function loadBasicInfo(data){
+  document.getElementById('hi-birthdate').value=data.birthdate||''
+  document.getElementById('hi-height').value=data.height||''
+  document.getElementById('hi-weight').value=data.weight||''
+  document.getElementById('hi-bloodtype').value=data.bloodType||''
+  if(data.gender){const el=document.querySelector(`input[name="gender"][value="${data.gender}"]`);if(el)el.checked=true}
+  calcBmi()
+}
+function saveBasicInfo(){
+  const g=document.querySelector('input[name="gender"]:checked')
+  const d=getHealthData()
+  d.basicInfo={
+    birthdate:document.getElementById('hi-birthdate').value,
+    gender:g?g.value:'',
+    height:parseFloat(document.getElementById('hi-height').value)||null,
+    weight:parseFloat(document.getElementById('hi-weight').value)||null,
+    bloodType:document.getElementById('hi-bloodtype').value
+  }
+  saveHealthDataAll(d); showToast('기본 정보가 저장되었습니다.')
+}
+function calcBmi(){
+  const h=parseFloat(document.getElementById('hi-height').value)
+  const w=parseFloat(document.getElementById('hi-weight').value)
+  const box=document.getElementById('bmiResult')
+  if(!h||!w||h<50||w<10){box.classList.add('d-none');return}
+  const bmi=(w/((h/100)**2)).toFixed(1)
+  let label='',color=''
+  if(bmi<18.5){label='저체중';color='#0284c7'}
+  else if(bmi<23){label='정상';color='#16a34a'}
+  else if(bmi<25){label='과체중';color='#d97706'}
+  else{label='비만';color='#dc2626'}
+  document.getElementById('bmiValue').textContent=bmi
+  const badge=document.getElementById('bmiBadge')
+  badge.textContent=label; badge.style.cssText=`background:${color}20;color:${color};`
+  box.classList.remove('d-none')
+}
+
+/* ================================================================
+   ⑪ Tab2: 복용 약물 (입력)
+   ================================================================ */
+function loadMedications(data){
+  medications=data.map(m=>({...m,id:m.id||uid()}))
+  renderMedicationList()
+}
+function renderMedicationList(){
+  const list=document.getElementById('medicationList')
+  if(!medications.length){list.innerHTML='<p class="text-muted small text-center py-3">등록된 약물이 없습니다.</p>';return}
+  list.innerHTML=medications.map((m,i)=>`
+    <div class="list-item-card">
+      <button class="btn-item-delete" onclick="deleteMedication(${i})"><i class="bi bi-x"></i></button>
+      <div class="row g-2">
+        <div class="col-sm-6">
+          <label class="form-label fw-500 small mb-1">약물명 / 영양제명 *</label>
+          <input type="text" class="form-control form-control-sm" placeholder="아스피린, 오메가3 등" value="${esc(m.name)}" oninput="medications[${i}].name=this.value"/>
+        </div>
+        <div class="col-sm-6">
+          <label class="form-label fw-500 small mb-1">용량</label>
+          <input type="text" class="form-control form-control-sm" placeholder="100mg, 1정 등" value="${esc(m.dose)}" oninput="medications[${i}].dose=this.value"/>
+        </div>
+        <div class="col-sm-6">
+          <label class="form-label fw-500 small mb-1">복용 시작일</label>
+          <input type="date" class="form-control form-control-sm" value="${esc(m.startDate)}" onchange="medications[${i}].startDate=this.value"/>
+        </div>
+        <div class="col-sm-6">
+          <label class="form-label fw-500 small mb-1">복용 시간</label>
+          <div class="d-flex gap-2 flex-wrap pt-1">
+            ${['아침','점심','저녁','취침 전'].map(t=>`
+              <div class="form-check form-check-inline m-0">
+                <input class="form-check-input" type="checkbox" id="mt_${i}_${t.replace(' ','_')}"
+                       ${(m.times||[]).includes(t)?'checked':''}
+                       onchange="toggleMedTime(${i},'${t}',this.checked)"/>
+                <label class="form-check-label small" for="mt_${i}_${t.replace(' ','_')}">${t}</label>
+              </div>`).join('')}
+          </div>
+        </div>
+      </div>
+    </div>`).join('')
+}
+function addMedicationItem(){
+  medications.push({id:uid(),name:'',dose:'',startDate:'',times:[]})
+  renderMedicationList()
+}
+function deleteMedication(i){
+  if(!confirm('삭제할까요?')) return
+  medications.splice(i,1); renderMedicationList()
+}
+function toggleMedTime(i,time,checked){
+  if(!medications[i].times) medications[i].times=[]
+  medications[i].times=checked?[...new Set([...medications[i].times,time])]:medications[i].times.filter(t=>t!==time)
+}
+function saveMedications(){
+  const d=getHealthData(); d.medications=medications; saveHealthDataAll(d)
+  showToast('복용 약물이 저장되었습니다.')
+}
+
+/* ================================================================
+   ⑫ Tab3: 알러지
+   ================================================================ */
+function loadAllergies(data){
+  allergies={drug:[...(data.drug||[])],food:[...(data.food||[])]}
+  renderAllergyTags('drug'); renderAllergyTags('food')
+}
+function renderAllergyTags(type){
+  const wrapId=type==='drug'?'drugAllergyTags':'foodAllergyTags'
+  const cls=type==='drug'?'allergy-tag':'allergy-tag food-tag'
+  const wrap=document.getElementById(wrapId)
+  if(!allergies[type].length){wrap.innerHTML=`<p class="text-muted small mt-1 mb-0">등록된 ${type==='drug'?'약물':'식품'} 알러지가 없습니다.</p>`;return}
+  wrap.innerHTML=allergies[type].map((tag,i)=>`
+    <span class="${cls}">${esc(tag)}<button onclick="removeAllergyTag('${type}',${i})">×</button></span>`).join('')
+}
+function addAllergyTag(type){
+  const inputId=type==='drug'?'drugAllergyInput':'foodAllergyInput'
+  const val=document.getElementById(inputId).value.trim()
+  if(!val) return
+  val.split(/[,，、]/).map(v=>v.trim()).filter(Boolean).forEach(item=>{
+    if(!allergies[type].includes(item)) allergies[type].push(item)
+  })
+  document.getElementById(inputId).value=''; renderAllergyTags(type)
+}
+function removeAllergyTag(type,i){ allergies[type].splice(i,1); renderAllergyTags(type) }
+function saveAllergies(){
+  const d=getHealthData(); d.allergies=allergies; saveHealthDataAll(d)
+  showToast('알러지 정보가 저장되었습니다.')
+}
+
+/* ================================================================
+   ⑬ Tab4: 지병
+   ================================================================ */
+function buildDiseaseChips(){
+  const wrap=document.getElementById('diseaseChips')
+  wrap.innerHTML=DISEASE_LIST.map((d,i)=>`
+    <div class="disease-chip">
+      <input type="checkbox" id="dis_${i}" value="${esc(d)}"/>
+      <label for="dis_${i}">${esc(d)}</label>
+    </div>`).join('')
+}
+function loadDiseases(data){
+  DISEASE_LIST.forEach((d,i)=>{
+    const el=document.getElementById('dis_'+i); if(el) el.checked=(data.selected||[]).includes(d)
+  })
+  document.getElementById('diseaseCustom').value=data.custom||''
+}
+function saveDiseases(){
+  const selected=DISEASE_LIST.filter((_,i)=>{const el=document.getElementById('dis_'+i);return el&&el.checked})
+  const d=getHealthData(); d.diseases={selected,custom:document.getElementById('diseaseCustom').value}
+  saveHealthDataAll(d); showToast('지병 정보가 저장되었습니다.')
+}
+
+/* ================================================================
+   ⑭ Tab5: 접종 이력 (입력)
+   ================================================================ */
+function loadVaccinations(data){
+  vaccinations=data.map(v=>({...v,id:v.id||uid()})); renderVaccinationList()
+}
+function renderVaccinationList(){
+  const list=document.getElementById('vaccinationList')
+  if(!vaccinations.length){list.innerHTML='<p class="text-muted small text-center py-3">등록된 접종 이력이 없습니다.</p>';return}
+  list.innerHTML=vaccinations.map((v,i)=>`
+    <div class="list-item-card">
+      <button class="btn-item-delete" onclick="deleteVaccination(${i})"><i class="bi bi-x"></i></button>
+      <div class="row g-2">
+        <div class="col-sm-5">
+          <label class="form-label fw-500 small mb-1">접종명 *</label>
+          <input type="text" class="form-control form-control-sm" placeholder="독감, COVID-19 등" value="${esc(v.name)}" oninput="vaccinations[${i}].name=this.value"/>
+        </div>
+        <div class="col-sm-3">
+          <label class="form-label fw-500 small mb-1">접종 날짜</label>
+          <input type="date" class="form-control form-control-sm" value="${esc(v.date)}" onchange="vaccinations[${i}].date=this.value"/>
+        </div>
+        <div class="col-sm-4">
+          <label class="form-label fw-500 small mb-1">접종 병원</label>
+          <input type="text" class="form-control form-control-sm" placeholder="서울 내과의원 등" value="${esc(v.hospital)}" oninput="vaccinations[${i}].hospital=this.value"/>
+        </div>
+      </div>
+    </div>`).join('')
+}
+function addVaccinationItem(){
+  vaccinations.push({id:uid(),name:'',date:'',hospital:''}); renderVaccinationList()
+}
+function deleteVaccination(i){
+  if(!confirm('삭제할까요?')) return; vaccinations.splice(i,1); renderVaccinationList()
+}
+function saveVaccinations(){
+  const d=getHealthData(); d.vaccinations=vaccinations; saveHealthDataAll(d)
+  showToast('접종 이력이 저장되었습니다.')
+}
+
+/* ================================================================
+   ⑮ 복용 약물 보기 페이지
+   ================================================================ */
+function openMedicationsViewPage(){
+  const s=getSession(); if(!s) return
+  const d=getHealthData()
+  const meds=d.medications||[]
+  const list=document.getElementById('medViewList')
+
+  if(!meds.length){
+    list.innerHTML=`<div class="empty-state">
+      <i class="bi bi-capsule"></i>
+      <p class="fw-500">등록된 복용 약물이 없습니다.</p>
+      <button class="btn btn-outline-main mt-2" onclick="openHealthPage('medications')">
+        <i class="bi bi-pencil me-1"></i> 건강 정보에서 입력하기
+      </button></div>`
+    showPage('medicationsViewPage'); return
+  }
+
+  const timeIcon = {'아침':'🌅','점심':'☀️','저녁':'🌆','취침 전':'🌙'}
+  list.innerHTML=meds.map(m=>`
+    <div class="view-card mb-3">
+      <div class="d-flex justify-content-between align-items-start mb-2">
+        <div>
+          <span class="fw-bold fs-6">${esc(m.name)||'(이름 없음)'}</span>
+          ${m.dose?`<span class="text-muted small ms-2">${esc(m.dose)}</span>`:''}
+        </div>
+        ${m.startDate?`<span class="text-muted small">${fmt(m.startDate)} 부터</span>`:''}
+      </div>
+      ${(m.times||[]).length?`
+        <div class="d-flex flex-wrap gap-1 mt-1">
+          ${m.times.map(t=>`<span class="badge-time">${timeIcon[t]||''} ${esc(t)}</span>`).join('')}
+        </div>`:'<span class="text-muted small">복용 시간 미지정</span>'}
+    </div>`).join('')
+
+  showPage('medicationsViewPage')
+}
+
+/* ================================================================
+   ⑯ 접종 이력 보기 페이지
+   ================================================================ */
+function openVaccinationsViewPage(){
+  const s=getSession(); if(!s) return
+  const d=getHealthData()
+  const vacs=d.vaccinations||[]
+  const list=document.getElementById('vacViewList')
+
+  if(!vacs.length){
+    list.innerHTML=`<div class="empty-state">
+      <i class="bi bi-syringe"></i>
+      <p class="fw-500">등록된 접종 이력이 없습니다.</p>
+      <button class="btn btn-outline-main mt-2" onclick="openHealthPage('vaccinations')">
+        <i class="bi bi-pencil me-1"></i> 건강 정보에서 입력하기
+      </button></div>`
+    showPage('vaccinationsViewPage'); return
+  }
+
+  const sorted=[...vacs].sort((a,b)=>b.date.localeCompare(a.date))
+  list.innerHTML=sorted.map(v=>`
+    <div class="view-card mb-3" style="border-left-color:#6a1b9a;">
+      <div class="d-flex justify-content-between align-items-center">
+        <div>
+          <i class="bi bi-syringe text-purple me-1" style="color:#6a1b9a;"></i>
+          <span class="fw-bold">${esc(v.name)||'(접종명 없음)'}</span>
+        </div>
+        ${v.date?`<span class="badge bg-light text-secondary border">${fmt(v.date)}</span>`:''}
+      </div>
+      ${v.hospital?`<div class="text-muted small mt-1"><i class="bi bi-hospital me-1"></i>${esc(v.hospital)}</div>`:''}
+    </div>`).join('')
+
+  showPage('vaccinationsViewPage')
+}
+
+/* ================================================================
+   ⑰ 진료 기록 localStorage 헬퍼
+   ================================================================ */
+function getMedicalRecords(){
+  const s=getSession(); return s?JSON.parse(localStorage.getItem(MR_KEY(s.email))||'[]'):[]
+}
+function saveMedicalRecords(arr){
+  const s=getSession(); if(s) localStorage.setItem(MR_KEY(s.email),JSON.stringify(arr))
+}
+
+/* ================================================================
+   ⑱ 진료 기록 목록 페이지
+   ================================================================ */
+function openMedicalRecordsPage(){
+  const s=getSession(); if(!s) return
+  document.getElementById('mrTopEmail').textContent=s.email
+  renderMedicalRecordList()
+  showPage('medicalRecordsPage')
+}
+
+function renderMedicalRecordList(){
+  const records=getMedicalRecords().sort((a,b)=>(b.date||'').localeCompare(a.date||''))
+  const list=document.getElementById('medRecordList')
+
+  if(!records.length){
+    list.innerHTML=`<div class="empty-state">
+      <i class="bi bi-hospital"></i>
+      <p class="fw-500 mb-1">등록된 진료 기록이 없습니다.</p>
+      <p class="text-muted small">오른쪽 하단 + 버튼으로 새 기록을 추가하세요.</p>
+    </div>`; return
+  }
+
+  list.innerHTML=records.map(r=>{
+    const bg=DEPT_COLORS[r.dept]||'#f5f5f5'
+    return `<div class="record-card mb-3">
+      <div class="d-flex justify-content-between align-items-start mb-2">
+        <div>
+          <span class="fw-bold">${esc(r.hospital)||'병원명 없음'}</span>
+          ${r.dept?`<span class="dept-badge ms-2" style="background:${bg};">${esc(r.dept)}</span>`:''}
+        </div>
+        <div class="d-flex align-items-center gap-2">
+          <span class="text-muted small">${fmt(r.date)}</span>
+          <div class="record-actions">
+            <button class="btn btn-sm btn-outline-primary rounded-3 px-2 py-0" onclick="openRecordPanel('${r.id}');event.stopPropagation()">
+              <i class="bi bi-pencil"></i>
+            </button>
+            <button class="btn btn-sm btn-outline-danger rounded-3 px-2 py-0" onclick="deleteRecord('${r.id}');event.stopPropagation()">
+              <i class="bi bi-trash"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+      ${r.symptoms?`<div class="small text-muted mb-1"><i class="bi bi-activity me-1"></i>증상: ${esc(r.symptoms)}</div>`:''}
+      ${r.diagnosis?`<div class="small mb-1"><i class="bi bi-clipboard-check me-1 text-success"></i>진단: <strong>${esc(r.diagnosis)}</strong></div>`:''}
+      ${(r.prescriptions||[]).length?`
+        <div class="mt-1">
+          ${r.prescriptions.map(p=>`<span class="rx-tag">${esc(p)}</span>`).join('')}
+        </div>`:''}
+      ${r.notes?`<div class="small text-muted mt-2 border-top pt-2"><i class="bi bi-sticky me-1"></i>${esc(r.notes)}</div>`:''}
+    </div>`
+  }).join('')
+}
+
+/* ================================================================
+   ⑲ 진료 기록 슬라이드 패널
+   ================================================================ */
+function openRecordPanel(id){
+  editingRecord=id
+  clearFieldErrs('rf-dateErr','rf-hospitalErr')
+  rxTags=[]
+
+  if(id){
+    const r=getMedicalRecords().find(r=>r.id===id)
+    if(!r) return
+    document.getElementById('panelTitle').textContent='진료 기록 수정'
+    document.getElementById('rf-date').value=r.date||''
+    document.getElementById('rf-hospital').value=r.hospital||''
+    document.getElementById('rf-dept').value=r.dept||''
+    document.getElementById('rf-symptoms').value=r.symptoms||''
+    document.getElementById('rf-diagnosis').value=r.diagnosis||''
+    document.getElementById('rf-notes').value=r.notes||''
+    rxTags=[...(r.prescriptions||[])]
+  } else {
+    document.getElementById('panelTitle').textContent='새 진료 기록'
+    document.getElementById('rf-date').value=today()
+    document.getElementById('rf-hospital').value=''
+    document.getElementById('rf-dept').value=''
+    document.getElementById('rf-symptoms').value=''
+    document.getElementById('rf-diagnosis').value=''
+    document.getElementById('rf-notes').value=''
+    rxTags=[]
+  }
+  renderRxTags()
+  document.getElementById('recordPanelOverlay').classList.add('show')
+  document.getElementById('rf-hospital').focus()
+}
+
+function closeRecordPanel(){
+  document.getElementById('recordPanelOverlay').classList.remove('show')
+  editingRecord=null
+}
+function closePanelOutside(e){
+  if(e.target===document.getElementById('recordPanelOverlay')) closeRecordPanel()
+}
+
+function renderRxTags(){
+  const wrap=document.getElementById('rf-rxTags')
+  wrap.innerHTML=rxTags.map((tag,i)=>`
+    <span class="rx-tag">${esc(tag)}<button onclick="removeRxTag(${i})">×</button></span>`).join('')
+}
+function addRxTag(){
+  const val=document.getElementById('rf-rxInput').value.trim()
+  if(!val) return
+  val.split(/[,，]/).map(v=>v.trim()).filter(Boolean).forEach(item=>{
+    if(!rxTags.includes(item)) rxTags.push(item)
+  })
+  document.getElementById('rf-rxInput').value=''; renderRxTags()
+}
+function removeRxTag(i){ rxTags.splice(i,1); renderRxTags() }
+
+function saveRecord(){
+  const date=document.getElementById('rf-date').value
+  const hospital=document.getElementById('rf-hospital').value.trim()
+  clearFieldErrs('rf-dateErr','rf-hospitalErr')
+  let ok=true
+  if(!date){showFieldErr('rf-dateErr','날짜를 선택해주세요.');ok=false}
+  if(!hospital){showFieldErr('rf-hospitalErr','병원명을 입력해주세요.');ok=false}
+  if(!ok) return
+
+  const record={
+    id: editingRecord||uid(),
+    date,
+    hospital,
+    dept:document.getElementById('rf-dept').value,
+    symptoms:document.getElementById('rf-symptoms').value.trim(),
+    diagnosis:document.getElementById('rf-diagnosis').value.trim(),
+    prescriptions:[...rxTags],
+    notes:document.getElementById('rf-notes').value.trim()
+  }
+  let records=getMedicalRecords()
+  if(editingRecord){
+    records=records.map(r=>r.id===editingRecord?record:r)
+    showToast('진료 기록이 수정되었습니다.')
+  } else {
+    records.push(record)
+    showToast('진료 기록이 추가되었습니다.')
+  }
+  saveMedicalRecords(records)
+  closeRecordPanel()
+  renderMedicalRecordList()
+}
+
+function deleteRecord(id){
+  if(!confirm('이 진료 기록을 삭제할까요?')) return
+  const records=getMedicalRecords().filter(r=>r.id!==id)
+  saveMedicalRecords(records)
+  renderMedicalRecordList()
+  showToast('진료 기록이 삭제되었습니다.')
+}
+
+/* ================================================================
+   ⑳ 초기화 — 모든 선언 이후 최하단 실행
+   ================================================================ */
+buildDiseaseChips()
+
+const _s = getSession()
+if(_s){ renderMain(_s); showPage('mainPage') }
+</script>
+</body>
+</html>
