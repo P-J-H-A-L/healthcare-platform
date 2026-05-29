@@ -166,6 +166,27 @@
     .risk-chip.mild{background:#fffde7;color:#f57f17;}
     .risk-chip.moderate{background:#fff3e0;color:#e65100;}
     .risk-chip.emergency{background:#ffebee;color:#c62828;}
+
+    /* ── 접종 알림 카드 ── */
+    .vac-alert-section{border-radius:14px;padding:1rem 1.2rem;margin-bottom:.75rem;}
+    .vac-alert-section.overdue{background:#fff5f5;border:1.5px solid #ffcdd2;}
+    .vac-alert-section.missing{background:#fffde7;border:1.5px solid #fff176;}
+    .vac-alert-section.ok-section{background:#f1f8e9;border:1.5px solid #c5e1a5;}
+    .vac-alert-section.soon{background:#fff8e1;border:1.5px solid #ffe082;}
+    .vac-alert-item{display:flex;align-items:flex-start;gap:.75rem;padding:.65rem .5rem;border-bottom:1px solid rgba(0,0,0,.06);}
+    .vac-alert-item:last-child{border-bottom:none;padding-bottom:0;}
+    .vac-alert-icon{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1rem;flex-shrink:0;}
+    .vac-status-badge{display:inline-block;font-size:.72rem;font-weight:700;border-radius:999px;padding:.15rem .55rem;}
+    .badge-overdue{background:#ffebee;color:#c62828;}
+    .badge-missing{background:#fffde7;color:#f57f17;}
+    .badge-ok{background:#e8f5e9;color:#2e7d32;}
+    .badge-soon{background:#fff3e0;color:#e65100;}
+    .vac-history-item{background:#fff;border-radius:12px;border:1.5px solid #e2e8f0;padding:1rem;margin-bottom:.6rem;transition:border-color .2s;}
+    .vac-history-item:hover{border-color:#90caf9;}
+    .vac-history-item.status-overdue{border-left:4px solid #e53935;}
+    .vac-history-item.status-soon{border-left:4px solid #fb8c00;}
+    .vac-history-item.status-ok{border-left:4px solid #43a047;}
+    .vac-history-item.status-none{border-left:4px solid #9e9e9e;}
   </style>
 </head>
 <body>
@@ -719,6 +740,34 @@ const DISEASE_LIST = [
   '뇌혈관질환','갑상선질환','신장질환','간질환','폐질환',
   '암(악성종양)','골다공증','천식','관절염','우울증/불안장애'
 ]
+/* 권고 예방접종 목록 (intervalMonths: null = 기초접종, 기간 만료 없음) */
+const RECOMMENDED_VACCINES = [
+  { name:'독감 (인플루엔자)',           keywords:['독감','인플루엔자','influenza','flu'],
+    intervalMonths:12,  icon:'bi-thermometer-high', color:'#1565c0',
+    desc:'매년 10~11월 접종 권고', tip:'65세 이상·만성질환자 필수' },
+  { name:'파상풍·디프테리아 (Td/Tdap)', keywords:['파상풍','td','tdap','디프테리아'],
+    intervalMonths:120, icon:'bi-bandaid',           color:'#6a1b9a',
+    desc:'10년마다 재접종 필요', tip:'상처 발생 시 5년 경과 시 즉시 접종' },
+  { name:'COVID-19 부스터',            keywords:['covid','코로나','코비드','모더나','화이자','얀센','아스트라'],
+    intervalMonths:6,   icon:'bi-shield-plus',       color:'#00838f',
+    desc:'6개월마다 부스터 접종 권고', tip:'65세 이상·면역저하자 적극 권고' },
+  { name:'A형 간염',                   keywords:['a형 간염','a형간염','hepatitis a','hav'],
+    intervalMonths:null, icon:'bi-droplet-half',     color:'#e65100',
+    desc:'2회 접종 완료 시 평생 면역', tip:'20~40대 권고' },
+  { name:'B형 간염',                   keywords:['b형 간염','b형간염','hepatitis b','hbv'],
+    intervalMonths:null, icon:'bi-droplet',          color:'#c62828',
+    desc:'3회 기초 접종', tip:'항체 미형성자 재접종 필요' },
+  { name:'폐렴구균',                   keywords:['폐렴','폐렴구균','pneumococcal','ppsv','pcv'],
+    intervalMonths:null, icon:'bi-lungs',            color:'#2e7d32',
+    desc:'65세 이상 1회(PPSV23) 접종 권고', tip:'만성질환자·면역저하자는 나이 무관' },
+  { name:'대상포진',                   keywords:['대상포진','herpes zoster','shingles','조스타'],
+    intervalMonths:null, icon:'bi-shield-exclamation',color:'#f57f17',
+    desc:'50세 이상 1회 접종 권고', tip:'60세 이상 적극 권고' },
+  { name:'MMR (홍역·유행성이하선염·풍진)', keywords:['mmr','홍역','풍진','유행성이하선염','볼거리'],
+    intervalMonths:null, icon:'bi-virus',            color:'#ad1457',
+    desc:'2회 기초 접종', tip:'1967년 이후 출생 미접종자 권고' },
+]
+
 const DEPT_COLORS = {
   '내과':'#e3f2fd','외과':'#fce4ec','정형외과':'#f3e5f5','피부과':'#fff9c4',
   '안과':'#e8f5e9','이비인후과':'#e0f7fa','치과':'#fff3e0','산부인과':'#fce4ec',
@@ -1157,37 +1206,184 @@ function openMedicationsViewPage(){
 }
 
 /* ================================================================
-   ⑯ 접종 이력 보기 페이지
+   ⑯ 접종 이력 보기 + 만료/미접종 알림
    ================================================================ */
+
+/* 개월 수 차이 계산 */
+function monthsDiff(dateStr){
+  if(!dateStr) return Infinity
+  const past=new Date(dateStr), now=new Date()
+  return (now.getFullYear()-past.getFullYear())*12+(now.getMonth()-past.getMonth())
+}
+
+/* 사용자 접종 이력에서 키워드 매칭 (가장 최근 접종 반환) */
+function findLatestVac(vacs, keywords){
+  const matched=vacs.filter(v=>{
+    const n=(v.name||'').toLowerCase()
+    return keywords.some(kw=>n.includes(kw.toLowerCase()))
+  })
+  if(!matched.length) return null
+  return matched.sort((a,b)=>(b.date||'').localeCompare(a.date||''))[0]
+}
+
+/* 권고 백신별 상태 분류 */
+function getVacStatus(vacs, rec){
+  const latest=findLatestVac(vacs, rec.keywords)
+  if(!latest) return {status:'missing', latest:null, elapsed:null}
+  const elapsed=monthsDiff(latest.date)
+  if(rec.intervalMonths){
+    if(elapsed>=rec.intervalMonths)         return {status:'overdue', latest, elapsed}
+    if(elapsed>=rec.intervalMonths*0.85)    return {status:'soon',    latest, elapsed}
+  }
+  return {status:'ok', latest, elapsed}
+}
+
+/* 경과 기간 포맷 */
+function fmtElapsed(months){
+  if(months===null||months===undefined) return ''
+  if(months<1)  return '1개월 미만'
+  if(months<12) return `${months}개월 전`
+  const y=Math.floor(months/12), m=months%12
+  return m>0 ? `${y}년 ${m}개월 전` : `${y}년 전`
+}
+
 function openVaccinationsViewPage(){
   const s=getSession(); if(!s) return
   const d=getHealthData()
   const vacs=d.vaccinations||[]
   const list=document.getElementById('vacViewList')
 
-  if(!vacs.length){
-    list.innerHTML=`<div class="empty-state">
-      <i class="bi bi-syringe"></i>
-      <p class="fw-500">등록된 접종 이력이 없습니다.</p>
-      <button class="btn btn-outline-main mt-2" onclick="openHealthPage('vaccinations')">
-        <i class="bi bi-pencil me-1"></i> 건강 정보에서 입력하기
-      </button></div>`
-    showPage('vaccinationsViewPage'); return
+  /* ── 권고 백신별 상태 분석 ── */
+  const statusMap=RECOMMENDED_VACCINES.map(rec=>({rec, ...getVacStatus(vacs,rec)}))
+  const overdue =statusMap.filter(x=>x.status==='overdue')
+  const soon    =statusMap.filter(x=>x.status==='soon')
+  const missing =statusMap.filter(x=>x.status==='missing')
+  const okList  =statusMap.filter(x=>x.status==='ok')
+
+  let html=''
+
+  /* ── 알림 섹션 ── */
+  if(overdue.length||soon.length||missing.length){
+    /* 재접종 필요 */
+    if(overdue.length){
+      html+=`<div class="vac-alert-section overdue mb-3">
+        <div class="d-flex align-items-center gap-2 mb-2">
+          <i class="bi bi-exclamation-triangle-fill text-danger fs-5"></i>
+          <strong class="text-danger">재접종 필요 (${overdue.length}건)</strong>
+        </div>
+        ${overdue.map(x=>`
+          <div class="vac-alert-item">
+            <div class="vac-alert-icon" style="background:#ffebee;color:#c62828;">
+              <i class="bi ${x.rec.icon}"></i>
+            </div>
+            <div class="flex-fill">
+              <div class="fw-bold small">${esc(x.rec.name)}
+                <span class="vac-status-badge badge-overdue ms-1">만료</span>
+              </div>
+              <div class="text-muted" style="font-size:.78rem;">
+                마지막 접종 ${esc(fmt(x.latest?.date||''))} · ${fmtElapsed(x.elapsed)}
+              </div>
+              <div class="text-danger" style="font-size:.76rem;">${esc(x.rec.desc)}</div>
+            </div>
+          </div>`).join('')}
+      </div>`
+    }
+
+    /* 곧 만료 */
+    if(soon.length){
+      html+=`<div class="vac-alert-section soon mb-3">
+        <div class="d-flex align-items-center gap-2 mb-2">
+          <i class="bi bi-clock-history text-warning fs-5"></i>
+          <strong style="color:#f57f17;">재접종 권고 시기 임박 (${soon.length}건)</strong>
+        </div>
+        ${soon.map(x=>`
+          <div class="vac-alert-item">
+            <div class="vac-alert-icon" style="background:#fff3e0;color:#e65100;">
+              <i class="bi ${x.rec.icon}"></i>
+            </div>
+            <div class="flex-fill">
+              <div class="fw-bold small">${esc(x.rec.name)}
+                <span class="vac-status-badge badge-soon ms-1">임박</span>
+              </div>
+              <div class="text-muted" style="font-size:.78rem;">
+                마지막 접종 ${esc(fmt(x.latest?.date||''))} · ${fmtElapsed(x.elapsed)}
+              </div>
+              <div style="color:#e65100;font-size:.76rem;">${esc(x.rec.desc)}</div>
+            </div>
+          </div>`).join('')}
+      </div>`
+    }
+
+    /* 미접종 */
+    if(missing.length){
+      html+=`<div class="vac-alert-section missing mb-3">
+        <div class="d-flex align-items-center gap-2 mb-2">
+          <i class="bi bi-info-circle-fill text-warning fs-5"></i>
+          <strong style="color:#f57f17;">미접종 권고 항목 (${missing.length}건)</strong>
+        </div>
+        ${missing.map(x=>`
+          <div class="vac-alert-item">
+            <div class="vac-alert-icon" style="background:#fffde7;color:${x.rec.color};">
+              <i class="bi ${x.rec.icon}"></i>
+            </div>
+            <div class="flex-fill">
+              <div class="fw-bold small">${esc(x.rec.name)}
+                <span class="vac-status-badge badge-missing ms-1">미접종</span>
+              </div>
+              <div class="text-muted" style="font-size:.78rem;">접종 이력 없음</div>
+              <div style="color:#e65100;font-size:.76rem;">${esc(x.rec.desc)}</div>
+              <div class="text-muted" style="font-size:.74rem;">💡 ${esc(x.rec.tip)}</div>
+            </div>
+          </div>`).join('')}
+      </div>`
+    }
+  } else if(vacs.length){
+    html+=`<div class="vac-alert-section ok-section mb-3">
+      <div class="d-flex align-items-center gap-2">
+        <i class="bi bi-check-circle-fill text-success fs-5"></i>
+        <strong class="text-success">권고 예방접종 모두 접종 완료</strong>
+      </div>
+    </div>`
   }
 
-  const sorted=[...vacs].sort((a,b)=>b.date.localeCompare(a.date))
-  list.innerHTML=sorted.map(v=>`
-    <div class="view-card mb-3" style="border-left-color:#6a1b9a;">
-      <div class="d-flex justify-content-between align-items-center">
-        <div>
-          <i class="bi bi-syringe text-purple me-1" style="color:#6a1b9a;"></i>
-          <span class="fw-bold">${esc(v.name)||'(접종명 없음)'}</span>
+  /* ── 접종 이력 목록 ── */
+  if(!vacs.length){
+    html+=`<div class="empty-state">
+      <i class="bi bi-syringe"></i>
+      <p class="fw-500 mb-1">등록된 접종 이력이 없습니다.</p>
+      <p class="text-muted small">건강 정보에서 접종 이력을 입력하면<br>만료·미접종 알림을 받을 수 있습니다.</p>
+      <button class="btn btn-outline-main mt-2" onclick="openHealthPage('vaccinations')">
+        <i class="bi bi-pencil me-1"></i> 건강 정보에서 입력하기
+      </button>
+    </div>`
+  } else {
+    const sorted=[...vacs].sort((a,b)=>(b.date||'').localeCompare(a.date||''))
+    html+=`<h6 class="fw-bold text-muted small mb-2 mt-1">접종 이력 (${sorted.length}건)</h6>`
+    html+=sorted.map(v=>{
+      /* 이 접종이 권고 목록 중 어느 항목에 해당하는지 찾기 */
+      const matched=statusMap.find(x=>x.latest?.id===v.id)
+      const statusCls=matched?`status-${matched.status}`:'status-none'
+      const badge=matched?
+        matched.status==='overdue'?`<span class="vac-status-badge badge-overdue ms-1">만료</span>`:
+        matched.status==='soon'?`<span class="vac-status-badge badge-soon ms-1">임박</span>`:
+        matched.status==='ok'?`<span class="vac-status-badge badge-ok ms-1">정상</span>`:'':''
+      const elapsed=v.date?`<span class="text-muted" style="font-size:.76rem;"> · ${fmtElapsed(monthsDiff(v.date))}</span>`:''
+      return `<div class="vac-history-item ${statusCls}">
+        <div class="d-flex justify-content-between align-items-start">
+          <div>
+            <i class="bi bi-syringe me-1" style="color:#6a1b9a;"></i>
+            <span class="fw-bold small">${esc(v.name)||'(접종명 없음)'}</span>${badge}
+          </div>
+          <span class="text-muted" style="font-size:.8rem;white-space:nowrap;">${esc(fmt(v.date||''))}</span>
         </div>
-        ${v.date?`<span class="badge bg-light text-secondary border">${fmt(v.date)}</span>`:''}
-      </div>
-      ${v.hospital?`<div class="text-muted small mt-1"><i class="bi bi-hospital me-1"></i>${esc(v.hospital)}</div>`:''}
-    </div>`).join('')
+        <div class="text-muted" style="font-size:.78rem;margin-top:.25rem;">
+          ${v.hospital?`<i class="bi bi-hospital me-1"></i>${esc(v.hospital)}`:''}${elapsed}
+        </div>
+      </div>`
+    }).join('')
+  }
 
+  list.innerHTML=html
   showPage('vaccinationsViewPage')
 }
 
